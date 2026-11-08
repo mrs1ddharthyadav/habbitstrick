@@ -37,6 +37,8 @@ jobs:
           echo "KEY_ALIAS=habbitstrick" >> "$GITHUB_ENV"
 
       - name: Build debug APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: gradle assembleDebug --stacktrace
 
       - name: Rename APK
