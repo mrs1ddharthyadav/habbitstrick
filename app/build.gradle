@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def runNo = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+
 android {
     namespace 'com.habbitstrick.app'
     compileSdk 34
@@ -10,13 +12,30 @@ android {
         applicationId 'com.habbitstrick.app'
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode 100 + runNo
+        versionName "1.${runNo}"
+    }
+
+    // The signing key never lives in the repository. CI restores it from a GitHub secret.
+    def ksFile = System.getenv('KEYSTORE_FILE')
+    if (ksFile) {
+        signingConfigs {
+            fixed {
+                storeFile file(ksFile)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            if (ksFile) signingConfig signingConfigs.fixed
+        }
         release {
             minifyEnabled false
+            if (ksFile) signingConfig signingConfigs.fixed
         }
     }
 

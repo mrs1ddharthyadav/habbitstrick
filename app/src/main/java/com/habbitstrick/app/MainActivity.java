@@ -319,9 +319,95 @@ public class MainActivity extends AppCompatActivity {
         deleteKey();
     }
 
+    /* ---------- updater ---------- */
+
+    private boolean downloading = false;
+
+    private void startUpdate() {
+        if (downloading) return;
+        if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+            js("window.nativeUpdState&&window.nativeUpdState('needperm','Allow installs from Habbit Strick in the screen that just opened, then come back and tap Update again.',0)");
+            try {
+                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (Exception ignored) {
+            }
+            return;
+        }
+        downloading = true;
+        js("window.nativeUpdState&&window.nativeUpdState('downloading','',0)");
+        new Thread(() -> {
+            try {
+                final java.io.File f = Updater.download(getApplicationContext(),
+                        pct -> js("window.nativeUpdState&&window.nativeUpdState('progress',''," + pct + ")"));
+                downloading = false;
+                runOnUiThread(() -> {
+                    try {
+                        Uri u = androidx.core.content.FileProvider.getUriForFile(MainActivity.this,
+                                getPackageName() + ".fileprovider", f);
+                        Intent in = new Intent(Intent.ACTION_VIEW);
+                        in.setDataAndType(u, "application/vnd.android.package-archive");
+                        in.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(in);
+                        js("window.nativeUpdState&&window.nativeUpdState('installing','Tap Install on the next screen. Your data stays safe.',100)");
+                    } catch (Exception e) {
+                        js("window.nativeUpdState&&window.nativeUpdState('error','Could not open the installer.',0)");
+                    }
+                });
+            } catch (Exception e) {
+                downloading = false;
+                js("window.nativeUpdState&&window.nativeUpdState('error','Download failed. Check your internet and try again.',0)");
+            }
+        }).start();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void buzz(int ms) {
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                v.vibrate(android.os.VibrationEffect.createOneShot(ms, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     /* ---------- bridge for the web page ---------- */
 
     private class Bridge {
+
+        @JavascriptInterface
+        public void haptic(int ms) {
+            buzz(Math.max(5, Math.min(60, ms)));
+        }
+
+        @JavascriptInterface
+        public String takeQueue() {
+            SharedPreferences p = prefs();
+            String q = p.getString("wq", "");
+            if (q == null || q.isEmpty() || "[]".equals(q)) return "";
+            p.edit().remove("wq").apply();
+            return q;
+        }
+
+        @JavascriptInterface
+        public String appVersion() {
+            return Updater.installedName(getApplicationContext()) + " (" + Updater.installedCode(getApplicationContext()) + ")";
+        }
+
+        @JavascriptInterface
+        public void checkUpdate(boolean manual) {
+            final boolean m = manual;
+            new Thread(() -> {
+                String r = Updater.check(getApplicationContext(), m);
+                js("window.nativeUpdate&&window.nativeUpdate(" + JSONObject.quote(r) + ")");
+            }).start();
+        }
+
+        @JavascriptInterface
+        public void downloadUpdate() {
+            runOnUiThread(() -> startUpdate());
+        }
 
         @JavascriptInterface
         public void sync(String json) {

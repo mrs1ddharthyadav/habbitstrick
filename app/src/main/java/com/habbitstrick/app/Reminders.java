@@ -55,6 +55,7 @@ public class Reminders {
                 .putString("rem", remStr)
                 .putString("doneDate", o.optString("date", ""))
                 .putString("doneIds", done.toString())
+                .putString("wItems", o.optJSONArray("items") != null ? o.optJSONArray("items").toString() : "[]")
                 .putString("wDate", o.optString("date", ""))
                 .putInt("wDone", o.optInt("done", 0))
                 .putInt("wTotal", o.optInt("total", 0))
