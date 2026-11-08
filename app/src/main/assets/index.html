@@ -806,11 +806,9 @@ function doBackupSave(){
   backupPayload().then(function(text){
     var name='habbit-strick-backup-'+today()+'.json';
     if(NAT&&typeof NAT.saveBackup==='function'){nat('saveBackup',[name,text]);return;}
-    try{
-      var blob=new Blob([text],{type:'application/json'}),a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
-      markBackup();msg='Backup file created.';render();
-    }catch(e){backupText=text;msg='Could not create a file here. The backup text is in the box below, copy and keep it.';render();}
+    backupText=text;markBackup();
+    msg='Copy the encrypted text in the box and keep it somewhere safe. Saving a file works in the Android app.';
+    render();
   }).catch(function(){msg='Could not create the backup.';render();});
 }
 function doImport(){
