@@ -23,11 +23,35 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "Signing secrets are missing. Add KEYSTORE_B64 and KEYSTORE_PASSWORD in the repo settings."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/habbitstrick.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/habbitstrick.jks" >> "$GITHUB_ENV"
+          echo "KEY_ALIAS=habbitstrick" >> "$GITHUB_ENV"
+
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk Habbit-Strick.apk
+
+      - name: Write version info
+        env:
+          RUN: ${{ github.run_number }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          CODE=$((100 + RUN))
+          SIZE=$(stat -c%s Habbit-Strick.apk)
+          NOTE=$(printf '%s' "$MSG" | head -1)
+          jq -n --argjson c "$CODE" --arg n "1.$RUN" --arg t "$NOTE" --argjson s "$SIZE" '{versionCode:$c,versionName:$n,notes:$t,size:$s}' > version.json
+          cat version.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -39,4 +63,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Habbit-Strick.apk --title "Habbit Strick" --notes "Latest build. Download Habbit-Strick.apk on your phone and install it."
+          gh release create latest Habbit-Strick.apk version.json --title "Habbit Strick" --notes "Latest build. Download Habbit-Strick.apk on your phone and install it."
