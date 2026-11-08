@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Habbit Strick</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23000'/%3E%3Cpath d='M8 17l5 5 11-12' fill='none' stroke='%23ff4f6d' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#050505;--card:#111112;--card2:#18181a;--line:rgba(255,255,255,.07);--text:#f4f4f5;--muted:#8d8d94;--accent:#ff4f6d;--pink:#ff8fa3;--display:"Syne","Arial Black",system-ui,sans-serif;--sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;color:var(--text);font:16px/1.45 var(--sans);background:radial-gradient(circle at 90% -5%,rgba(255,79,109,.13),transparent 40%),radial-gradient(circle at -10% 105%,rgba(255,79,109,.07),transparent 45%),var(--bg);background-attachment:fixed;padding-bottom:130px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;margin:0 auto;padding:26px 18px 0}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;gap:12px}
+h1{font:800 clamp(32px,9vw,42px)/1 var(--display);letter-spacing:-.02em;margin:0}
+.sub{color:var(--muted);font-size:14px;margin-top:8px}
+.ib{width:46px;height:46px;border-radius:16px;border:1px solid var(--line);background:var(--card2);color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
+.ib svg{width:20px;height:20px}
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(92%,400px);display:flex;padding:8px;background:rgba(20,20,22,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:26px;z-index:20}
+.tab{flex:1;background:none;border:0;border-radius:18px;color:var(--muted);padding:9px 4px 7px;font:500 11px var(--sans);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s}
+.tab svg{width:23px;height:23px}
+.tab.on{color:var(--text);background:rgba(255,255,255,.08)}
+.tab.on svg{color:var(--accent)}
+.tile{position:relative;background:radial-gradient(circle at 50% 60%,#050505 0%,#141415 75%);border:1px solid var(--line);border-radius:28px;padding:18px;overflow:hidden}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.lbl{font-size:14px;font-weight:500}
+.foot{font-size:12.5px;color:var(--muted)}
+.foot b{color:var(--text);font-weight:500}
+.num{font:800 clamp(42px,13vw,58px)/1 var(--display);color:var(--accent);letter-spacing:-.03em;margin:22px 0 20px}
+.num small{font-size:.4em;letter-spacing:0;margin-left:3px;color:var(--pink)}
+.w1{display:flex;flex-direction:column;justify-content:space-between;min-height:176px}
+.ring{width:70px;height:70px;position:relative;margin-bottom:26px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.rt,.rf{fill:none;stroke-width:5}
+.rt{stroke:rgba(255,255,255,.1)}
+.rf{stroke:var(--accent);stroke-linecap:round;transition:stroke-dasharray .6s}
+.rn{position:absolute;inset:0;display:grid;place-items:center;font:700 24px var(--display)}
+.big{font:800 52px/1 var(--display);letter-spacing:-.03em;margin:14px 0 26px}
+.big small{font:500 18px var(--sans);color:var(--muted);margin-left:4px;letter-spacing:0}
+.wk{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px}
+.wk .m{font:700 17px var(--display)}
+.wk .ib{width:38px;height:38px;border-radius:13px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:22px;text-align:center}
+.wd button{width:100%;max-width:46px;aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--text);font:500 12px var(--sans);cursor:pointer;margin:0 auto;display:grid;place-items:center;padding:0}
+.wd.sel button{background:var(--text);color:#000;border-color:var(--text);font-weight:700}
+.wd.now button{border-color:var(--accent)}
+.wd small{display:block;color:var(--muted);font-size:11.5px;margin-top:7px}
+.sec{display:flex;align-items:center;gap:10px;margin:6px 0 12px}
+h2{font:700 20px var(--display);margin:0;letter-spacing:-.01em}
+.bd{background:rgba(255,255,255,.1);border-radius:8px;padding:2px 9px;font-size:12.5px;font-weight:500}
+.tk{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:10px}
+.chk{width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);background:none;flex:none;cursor:pointer;display:grid;place-items:center;padding:0;transition:all .2s}
+.chk.on{background:var(--accent);border-color:var(--accent)}
+.chk svg{width:15px;height:15px;display:none;color:#fff}
+.chk.on svg{display:block}
+.tn{flex:1;min-width:0;word-break:break-word;font-weight:500}
+.tk.done .tn{color:var(--muted);text-decoration:line-through}
+.tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px;margin-bottom:16px}
+input,select,textarea{font:inherit;color:var(--text);background:#000;border:1px solid var(--line);border-radius:14px;padding:13px;min-width:0;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.fr{display:flex;gap:10px;margin-top:10px}
+textarea{min-height:90px;font-size:13px}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:14px;padding:13px 18px;font:700 15px var(--sans);cursor:pointer}
+.btn.ghost{background:none;color:var(--text);border:1px solid var(--line)}
+.btn.sm{padding:8px 13px;font-size:13.5px;font-weight:500}
+.btn.danger{background:none;color:var(--pink);border:1px solid var(--line)}
+.btn.full{width:100%;margin-top:10px}
+.heat{background:linear-gradient(180deg,#2b0e14,#4a1520);border-radius:28px;padding:18px;margin-bottom:12px;border:1px solid rgba(255,79,109,.18)}
+.hw{display:flex;gap:8px}
+.hl{display:grid;grid-template-rows:repeat(7,1fr);font-size:10.5px;color:rgba(255,255,255,.7);align-items:center;gap:3px}
+.hc{flex:1;display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.c{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.08)}
+.c.f{opacity:.3}
+.c.l0{background:rgba(255,255,255,.2)}
+.c.l1{background:#7d2a3b}
+.c.l2{background:#c73a5a}
+.c.l3{background:var(--pink)}
+.c.l4{background:var(--accent)}
+.hr{text-align:center;font-size:13.5px;margin-top:14px;color:rgba(255,255,255,.9)}
+.bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .5s}
+.pt{margin-bottom:16px}
+.pt:last-child{margin-bottom:0}
+.pr{display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:8px;gap:10px}
+.rec{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px 18px;margin-bottom:8px}
+.rec span{color:var(--muted);font-size:14px}
+.empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:15px}
+.brand{font:700 12px var(--display);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.fl{font-size:12px;color:var(--muted);margin:12px 0 6px}
+[hidden]{display:none!important}
+.lockscr{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;overflow:auto;background:radial-gradient(circle at 90% -5%,rgba(255,79,109,.13),transparent 40%),var(--bg)}
+.lk{width:min(100%,380px)}
+body.locked .wrap,body.locked .tabs{display:none}
+.tk{flex-wrap:wrap}
+.tk .tn{flex:1 1 140px}
+.tk .btn{flex:none}
+input[type=date]{min-height:48px}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><div class="brand">Habbit Strick</div><h1 id="hi"></h1><div class="sub" id="eb"></div></div><div id="act"></div></div>
+  <div id="main"></div>
+</div>
+<div id="lock" class="lockscr" hidden></div>
+<nav class="tabs" id="tabs">
+  <button class="tab" data-a="tab" data-v="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></svg>Today</button>
+  <button class="tab" data-a="tab" data-v="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 20v-9M12 20V5M18 20v-6"/></svg>Insights</button>
+  <button class="tab" data-a="tab" data-v="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.8" cy="7" r=".8"/><circle cx="4.8" cy="12" r=".8"/><circle cx="4.8" cy="17" r=".8"/></svg>Tasks</button>
+</nav>
+<script>
+(function(){
+var OLD='dailytracker.v1',VKEY='habbitstrick.vault';
+var S={tasks:[],log:{}},key=null,salt=null,q=Promise.resolve();
+var lockMode='unlock',lockErr='',busy=false,fails=0,resetArm=false,smsg='',hiddenAt=0;
+var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>';
+function b64(buf){var a=new Uint8Array(buf),s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]);return btoa(s);}
+function unb(s){var r=atob(s),a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return a;}
+function derive(pw,s){return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']).then(function(m){return crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);});}
+function enc(text){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(text)).then(function(ct){return {s:b64(salt),i:b64(iv),d:b64(ct)};});}
+function persist(){return enc(JSON.stringify(S)).then(function(v){localStorage.setItem(VKEY,JSON.stringify(v));});}
+function save(){if(!key)return;q=q.then(persist).catch(function(){});}
+function unlockWith(v,pw){var s=unb(v.s);return derive(pw,s).then(function(k){return crypto.subtle.decrypt({name:'AES-GCM',iv:unb(v.i)},k,unb(v.d)).then(function(buf){var o=JSON.parse(new TextDecoder().decode(buf));S=o;key=k;salt=s;});});}
+function lockUI(){
+  var el=document.getElementById('lock'),setup=lockMode==='setup';
+  el.innerHTML='<div class="lk"><div class="brand">Habbit Strick</div><h1>'+(setup?'Create password':'Welcome back')+'</h1><div class="sub">'+(setup?'This password locks the app and encrypts your data on this device. If you forget it, your data cannot be recovered.':'Enter your password to open.')+'</div><div class="panel" style="margin-top:22px"><input type="password" class="lkin" id="lp" placeholder="Password" autocomplete="'+(setup?'new-password':'current-password')+'">'+(setup?'<input type="password" class="lkin" id="lp2" placeholder="Confirm password" autocomplete="new-password" style="margin-top:10px">':'')+(lockErr?'<p class="hint" style="color:var(--pink)">'+esc(lockErr)+'</p>':'')+'<button class="btn full" data-a="lkgo"'+(busy?' disabled':'')+'>'+(busy?'Please wait':(setup?'Create and open':'Unlock'))+'</button></div>'+(setup?'':'<button class="btn ghost sm" data-a="lkreset">'+(resetArm?'Tap again to erase everything':'Forgot password?')+'</button>')+'</div>';
+  document.body.classList.add('locked');el.hidden=false;
+  setTimeout(function(){var f=document.getElementById('lp');if(f&&!busy)f.focus();},0);
+}
+function openApp(){document.body.classList.remove('locked');document.getElementById('lock').hidden=true;view='today';cur=today();render();}
+function lkgo(){
+  if(busy)return;
+  var pw=document.getElementById('lp').value;lockErr='';
+  if(lockMode==='setup'){
+    var pw2=document.getElementById('lp2').value;
+    if(pw.length<6){lockErr='Use at least 6 characters.';lockUI();return;}
+    if(pw!==pw2){lockErr='The two passwords do not match.';lockUI();return;}
+    var data={tasks:[],log:{}};
+    try{var raw=localStorage.getItem(OLD);if(raw){var p=JSON.parse(raw);if(p&&p.tasks&&p.log)data=p;}}catch(e){}
+    busy=true;lockUI();
+    var ns=crypto.getRandomValues(new Uint8Array(16));
+    derive(pw,ns).then(function(k){key=k;salt=ns;S=data;return persist();}).then(function(){try{localStorage.removeItem(OLD);}catch(e){}busy=false;openApp();}).catch(function(){key=null;busy=false;lockErr='Could not save in this browser.';lockUI();});
+  }else{
+    var v=null;try{v=JSON.parse(localStorage.getItem(VKEY));}catch(e){}
+    if(!v){lockMode='setup';lockUI();return;}
+    busy=true;lockUI();
+    unlockWith(v,pw).then(function(){fails=0;busy=false;openApp();}).catch(function(){fails++;lockErr='Wrong password.';setTimeout(function(){busy=false;lockUI();},Math.min(fails*700,5000));});
+  }
+}
+function lkreset(){
+  if(!resetArm){resetArm=true;lockErr='This erases all tasks and history on this device so you can start over with a new password.';lockUI();return;}
+  try{localStorage.removeItem(VKEY);localStorage.removeItem(OLD);}catch(e){}
+  resetArm=false;lockErr='';S={tasks:[],log:{}};lockMode='setup';lockUI();
+}
+function lockNow(){q=q.then(function(){key=null;salt=null;S={tasks:[],log:{}};editId=null;addOpen=false;backupText='';delId=null;lockMode='unlock';lockErr='';resetArm=false;document.getElementById('main').innerHTML='';lockUI();});}
+function chpw(){
+  var cp=document.getElementById('cp').value,np=document.getElementById('np').value,np2=document.getElementById('np2').value;
+  if(np.length<6){smsg='New password needs at least 6 characters.';render();return;}
+  if(np!==np2){smsg='The new passwords do not match.';render();return;}
+  var v=null;try{v=JSON.parse(localStorage.getItem(VKEY));}catch(e){}
+  if(!v){smsg='Could not read saved data.';render();return;}
+  derive(cp,unb(v.s)).then(function(k){return crypto.subtle.decrypt({name:'AES-GCM',iv:unb(v.i)},k,unb(v.d));}).then(function(){var ns=crypto.getRandomValues(new Uint8Array(16));return derive(np,ns).then(function(k2){key=k2;salt=ns;return persist();});}).then(function(){smsg='Password changed.';render();}).catch(function(){smsg='Current password is wrong.';render();});
+}
+function boot(){
+  if(!window.crypto||!crypto.subtle){var el=document.getElementById('lock');el.hidden=false;document.body.classList.add('locked');el.innerHTML='<div class="lk"><h1>Not supported</h1><div class="sub">This browser cannot encrypt data, so the app will not open. Try a recent Chrome, Safari or Firefox.</div></div>';return;}
+  var v=null;try{v=localStorage.getItem(VKEY);}catch(e){}
+  lockMode=v?'unlock':'setup';lockUI();
+}
+document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}});
+function pad(n){return n<10?'0'+n:''+n;}
+function ds(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function parse(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2]);}
+function shift(s,n){var d=parse(s);d.setDate(d.getDate()+n);return ds(d);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function today(){return ds(new Date());}
+function dow(s){return (parse(s).getDay()+6)%7;}
+function lf(s,o){return parse(s).toLocaleDateString(undefined,o);}
+var view='today',cur=today(),backupText='',addOpen=false,focusAdd=false,delId=null,impArm=false,msg='',editId=null;
+var CATS=['General','Work','Study','Health','Home','Personal'];
+var CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.5"/></svg>';
+var PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+var LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+var RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+
+function applicable(date){
+  return S.tasks.filter(function(t){
+    if(t.type==='once')return t.date===date;
+    return t.created<=date&&(!t.archived||t.archived>date);
+  });
+}
+function dayStat(date){
+  var a=applicable(date),l=S.log[date]||{},d=0;
+  a.forEach(function(t){if(l[t.id])d++;});
+  return {total:a.length,done:d,pct:a.length?d/a.length:null};
+}
+function firstDate(){
+  var m=today();
+  S.tasks.forEach(function(t){var x=t.type==='once'?t.date:t.created;if(x<m)m=x;});
+  return m;
+}
+function streaks(){
+  var t=today(),f=firstDate(),best=0,run=0,d=f,perfect=0;
+  while(d<=t){
+    var s=dayStat(d);
+    if(s.total>0){
+      if(s.pct===1){run++;perfect++;if(run>best)best=run;}
+      else if(d!==t){run=0;}
+    }
+    d=shift(d,1);
+  }
+  var cs=0;d=t;
+  while(d>=f){
+    var s2=dayStat(d);
+    if(s2.total>0){
+      if(s2.pct===1)cs++;
+      else if(d!==t)break;
+    }
+    d=shift(d,-1);
+  }
+  return {cur:cs,best:best,perfect:perfect};
+}
+function avg(days){
+  var t=today(),sum=0,n=0;
+  for(var i=0;i<days;i++){var s=dayStat(shift(t,-i));if(s.total){sum+=s.pct;n++;}}
+  return n?Math.round(sum/n*100):0;
+}
+function totalChecks(){
+  var n=0,ids={};
+  S.tasks.forEach(function(t){ids[t.id]=1;});
+  for(var d in S.log)for(var id in S.log[d])if(ids[id])n++;
+  return n;
+}
+function weekProgress(){
+  var t=today(),m=shift(t,-dow(t)),dn=0,tt=0;
+  for(var d=m;d<=t;d=shift(d,1)){var s=dayStat(d);dn+=s.done;tt+=s.total;}
+  return tt?Math.round(dn/tt*100):0;
+}
+
+function editForm(t){
+  var dt=t.type==='once'?t.date:t.created;
+  return '<div class="panel"><input type="text" id="en" value="'+esc(t.name)+'" maxlength="120"><div class="fr"><select id="ec">'+CATS.map(function(c){return '<option'+(c===t.cat?' selected':'')+'>'+c+'</option>';}).join('')+'</select><select id="ey"><option value="daily"'+(t.type==='daily'?' selected':'')+'>Every day</option><option value="once"'+(t.type==='once'?' selected':'')+'>Only on that date</option></select></div><div class="fl">Date</div><input type="date" id="ed" value="'+dt+'"><div class="fr"><button class="btn" style="flex:1" data-a="save" data-id="'+t.id+'">Save</button><button class="btn ghost" data-a="cancel">Cancel</button></div></div>';
+}
+function renderToday(){
+  var a=applicable(cur),l=S.log[cur]||{},st=dayStat(cur),pct=Math.round((st.pct||0)*100),h='';
+  if(addOpen){
+    h+='<div class="panel"><input type="text" id="nt" placeholder="What do you want to get done?" maxlength="120"><div class="fr"><select id="nc">'+CATS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select><select id="ny"><option value="daily">Every day</option><option value="once">Only on that date</option></select></div><div class="fl">Date (starts on the day you are viewing unless you change it)</div><input type="date" id="nd" value="'+cur+'"><button class="btn full" data-a="add">Add task</button><p class="hint">Pick a future date to plan ahead. Every day tasks start on that date and repeat daily. Past days never change when you add tasks.</p></div>';
+  }
+  var arc=(st.total?st.done/st.total:0)*213.6;
+  h+='<div class="g2"><div class="tile w1"><div class="ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="rt"/><circle cx="40" cy="40" r="34" class="rf" style="stroke-dasharray:'+arc+' 213.6"/></svg><div class="rn">'+st.done+'</div></div><div><div class="lbl">Completed</div><div class="foot">of '+st.total+' tasks</div></div></div>';
+  h+='<div class="tile w1"><div class="big" style="color:var(--text)">'+pct+'<small>%</small></div><div><div class="lbl">Progress</div><div class="foot">'+(cur===today()?'Today':lf(cur,{day:'numeric',month:'short'}))+'</div></div></div></div>';
+  var t0=today(),mon=shift(cur,-dow(cur));
+  h+='<div class="wk"><div class="m">'+lf(cur,{month:'long',year:'numeric'})+'</div><div class="fr" style="margin:0"><button class="ib" data-a="day" data-v="-7" aria-label="Previous week">'+LEFT+'</button><button class="ib" data-a="day" data-v="7" aria-label="Next week">'+RIGHT+'</button></div></div><div class="week">';
+  var L=['M','T','W','T','F','S','S'];
+  for(var i=0;i<7;i++){
+    var d=shift(mon,i),x=dayStat(d);
+    h+='<div class="wd'+(d===cur?' sel':'')+(d===t0?' now':'')+'"><button data-a="pick" data-v="'+d+'">'+(x.total?Math.round(x.pct*100):parse(d).getDate())+'</button><small>'+L[i]+'</small></div>';
+  }
+  h+='</div>';
+  h+='<div class="sec"><h2>Tasks</h2><span class="bd">'+st.done+'/'+st.total+'</span></div>';
+  if(!a.length)h+='<div class="empty">Nothing planned for this day.<br>Tap the plus button to add a task.</div>';
+  a.forEach(function(t){
+    var on=l[t.id];
+    if(editId===t.id){h+=editForm(t);return;}
+    h+='<div class="tk'+(on?' done':'')+'"><button class="chk'+(on?' on':'')+'" data-a="tog" data-id="'+t.id+'" aria-label="Toggle">'+CHECK+'</button><div class="tn" data-a="edit" data-id="'+t.id+'" style="cursor:pointer">'+esc(t.name)+'</div><span class="tag">'+esc(t.cat)+'</span></div>';
+  });
+  return h;
+}
+function tile(lb,big,ft,extra){
+  return '<div class="tile"><div class="lbl">'+lb+'</div><div class="num">'+big+'</div>'+(extra||'')+'<div class="foot">'+ft+'</div></div>';
+}
+function renderDash(){
+  var t=today(),sk=streaks(),f=firstDate(),h='';
+  var mon=shift(t,-dow(t)),start=shift(mon,-19*7),cells='';
+  for(var w=0;w<20;w++)for(var r=0;r<7;r++){
+    var d=shift(start,w*7+r),cls='c';
+    if(d>t)cls+=' f';
+    else{var s=dayStat(d);if(d>=f&&s.total){cls+=s.pct===0?' l0':s.pct<.34?' l1':s.pct<.67?' l2':s.pct<1?' l3':' l4';}}
+    cells+='<div class="'+cls+'" title="'+d+'"></div>';
+  }
+  h+='<div class="heat"><div class="hw"><div class="hl"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="hc">'+cells+'</div></div><div class="hr">'+lf(start,{month:'short',day:'numeric',year:'numeric'})+' to '+lf(t,{month:'short',day:'numeric',year:'numeric'})+'</div></div>';
+  var wp=weekProgress();
+  h+='<div class="g2">'+tile('Streak',sk.cur,'Longest: <b>'+sk.best+'</b>')+tile('Check-ins',totalChecks(),'Started: <b>'+lf(f,{month:'short',day:'numeric'})+'</b>')+tile('Perfect days',sk.perfect,'30 day avg: <b>'+avg(30)+'%</b>')+tile('This week',wp+'<small>%</small>','7 day avg: <b>'+avg(7)+'%</b>','<div class="bar" style="margin:-4px 0 14px"><i style="width:'+wp+'%"></i></div>')+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Per task</h2></div><div class="panel">';
+  var any=false;
+  S.tasks.filter(function(x){return x.type==='daily';}).forEach(function(tk){
+    var n=0,dn=0;
+    for(var k=0;k<30;k++){
+      var dd=shift(t,-k);
+      if(tk.created<=dd&&(!tk.archived||tk.archived>dd)){n++;if((S.log[dd]||{})[tk.id])dn++;}
+    }
+    if(!n)return;
+    any=true;
+    h+='<div class="pt"><div class="pr"><span>'+esc(tk.name)+(tk.archived?' (archived)':'')+'</span><b>'+dn+'/'+n+'</b></div><div class="bar"><i style="width:'+Math.round(dn/n*100)+'%"></i></div></div>';
+  });
+  if(!any)h+='<div class="empty">Add an every day task to see progress here.</div>';
+  h+='</div>';
+  var rec='',cnt=0;
+  for(var q=0;q<45&&cnt<10;q++){
+    var dq=shift(t,-q),sq=dayStat(dq);
+    if(sq.total){cnt++;rec+='<div class="rec"><b>'+lf(dq,{weekday:'short',month:'short',day:'numeric'})+'</b><span>'+sq.done+' of '+sq.total+' done</span></div>';}
+  }
+  h+='<div class="sec" style="margin-top:22px"><h2>Records</h2>'+(cnt?'<span class="bd">'+cnt+'</span>':'')+'</div>'+(rec||'<div class="empty">Your recent days will show up here.</div>');
+  return h;
+}
+function renderTasks(){
+  var h='';
+  if(!S.tasks.length)h+='<div class="empty">No tasks yet. Add one from the Today tab.</div>';
+  S.tasks.slice().reverse().forEach(function(t){
+    if(editId===t.id){h+=editForm(t);return;}
+    var meta=t.type==='once'?'Only '+t.date:(t.archived?'Archived':'Every day')+' from '+t.created;
+    h+='<div class="tk"><div class="tn">'+esc(t.name)+'<div class="foot">'+esc(t.cat)+' · '+meta+'</div></div>';
+    h+='<button class="btn ghost sm" data-a="edit" data-id="'+t.id+'">Edit</button>';
+    if(t.type==='daily')h+='<button class="btn ghost sm" data-a="arch" data-id="'+t.id+'">'+(t.archived?'Restore':'Archive')+'</button>';
+    h+='<button class="btn danger sm" data-a="del" data-id="'+t.id+'">'+(delId===t.id?'Tap to confirm':'Delete')+'</button></div>';
+  });
+  h+='<div class="sec" style="margin-top:22px"><h2>Security</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Your data is encrypted with your password on this device. The app locks itself after you leave it for a minute.</p><button class="btn ghost sm" data-a="lock">Lock now</button><div class="fl">Change password</div><input type="password" id="cp" placeholder="Current password" autocomplete="current-password"><input type="password" id="np" placeholder="New password" autocomplete="new-password" style="margin-top:10px"><input type="password" id="np2" placeholder="Confirm new password" autocomplete="new-password" style="margin-top:10px"><button class="btn full" data-a="chpw">Change password</button>'+(smsg?'<p class="hint" style="color:var(--pink)">'+esc(smsg)+'</p>':'')+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Your data lives in this browser on this device. Export to keep a copy or move it to another device.</p><div class="fr" style="margin:0 0 12px"><button class="btn ghost sm" data-a="exp">Export</button><button class="btn ghost sm" data-a="imp">Import from box</button></div><textarea id="bk" placeholder="Export text appears here. Paste backup text here to import.">'+esc(backupText)+'</textarea>'+(msg?'<p class="hint" style="color:var(--pink)">'+esc(msg)+'</p>':'')+'</div>';
+  return h;
+}
+function render(){
+  var n=S.tasks.filter(function(x){return x.type==='daily'&&!x.archived;}).length;
+  var hd={today:['Today',cur===today()?lf(cur,{weekday:'long',day:'numeric',month:'long'}):lf(cur,{weekday:'short',day:'numeric',month:'short',year:'numeric'})],dash:['Insights','Your consistency'],tasks:['Tasks',n+' active every day']}[view];
+  document.getElementById('hi').textContent=hd[0];
+  document.getElementById('eb').textContent=hd[1];
+  document.getElementById('act').innerHTML='<div class="fr" style="margin:0">'+(view==='today'?'<button class="ib" data-a="addtoggle" aria-label="Add task">'+PLUS+'</button>':'')+'<button class="ib" data-a="lock" aria-label="Lock app">'+LOCK+'</button></div>';
+  document.getElementById('main').innerHTML=view==='today'?renderToday():view==='dash'?renderDash():renderTasks();
+  var tb=document.querySelectorAll('.tab');
+  for(var i=0;i<tb.length;i++)tb[i].classList.toggle('on',tb[i].getAttribute('data-v')===view);
+  if(focusAdd){var el=document.getElementById('nt');if(el)el.focus();focusAdd=false;}
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-a]');if(!b)return;
+  var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),v=b.getAttribute('data-v');
+  if(a!=='del')delId=null;
+  if(a!=='imp')impArm=false;
+  if(a==='tab'){view=v;msg='';editId=null;window.scrollTo(0,0);}
+  else if(a==='day'){cur=shift(cur,+v);}
+  else if(a==='pick'){cur=v;}
+  else if(a==='lock'){lockNow();return;}
+  else if(a==='lkgo'){lkgo();return;}
+  else if(a==='lkreset'){lkreset();return;}
+  else if(a==='chpw'){chpw();return;}
+  else if(a==='edit'){editId=id;}
+  else if(a==='cancel'){editId=null;}
+  else if(a==='save'){
+    var nm=document.getElementById('en').value.trim();if(!nm)return;
+    var ed=document.getElementById('ed').value||today();
+    S.tasks.forEach(function(t){if(t.id===id){t.name=nm;t.cat=document.getElementById('ec').value;t.type=document.getElementById('ey').value;t.date=ed;t.created=ed;if(t.archived&&t.archived<=ed)delete t.archived;}});
+    save();editId=null;
+  }
+  else if(a==='addtoggle'){addOpen=!addOpen;focusAdd=addOpen;}
+  else if(a==='add'){
+    var name=document.getElementById('nt').value.trim();if(!name)return;
+    var nd=document.getElementById('nd').value||cur;
+    S.tasks.push({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:name,cat:document.getElementById('nc').value,type:document.getElementById('ny').value,created:nd,date:nd});
+    save();addOpen=false;cur=nd;
+  }
+  else if(a==='tog'){
+    var l=S.log[cur]||(S.log[cur]={});
+    if(l[id])delete l[id];else l[id]=1;
+    save();
+  }
+  else if(a==='arch'){
+    S.tasks.forEach(function(t){if(t.id===id){if(t.archived)delete t.archived;else t.archived=today();}});
+    save();
+  }
+  else if(a==='del'){
+    if(delId!==id){delId=id;render();return;}
+    delId=null;
+    S.tasks=S.tasks.filter(function(t){return t.id!==id;});
+    for(var d in S.log)delete S.log[d][id];
+    save();
+  }
+  else if(a==='exp'){backupText=JSON.stringify(S);render();var ta=document.getElementById('bk');ta.focus();ta.select();return;}
+  else if(a==='imp'){
+    try{
+      var o=JSON.parse(document.getElementById('bk').value);
+      if(!o||!Array.isArray(o.tasks)||typeof o.log!=='object')throw 0;
+      if(!impArm){impArm=true;backupText=document.getElementById('bk').value;msg='Tap Import again to replace your current data.';render();return;}
+      S=o;save();backupText='';impArm=false;msg='Backup imported.';
+    }catch(err){backupText=document.getElementById('bk').value;msg='That backup text is not valid.';render();return;}
+  }
+  render();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('lkin')){var gb=document.querySelector('[data-a="lkgo"]');if(gb)gb.click();}
+  if(e.key==='Enter'&&e.target.id==='nt'){var btn=document.querySelector('[data-a="add"]');if(btn)btn.click();}
+});
+boot();
+})();
+</script>
+</body>
+</html>
