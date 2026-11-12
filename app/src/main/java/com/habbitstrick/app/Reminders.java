@@ -30,6 +30,7 @@ public class Reminders {
     static final String ACTION_REMIND = "com.habbitstrick.app.REMIND";
     static final String ACTION_ONCE = "com.habbitstrick.app.REMIND_ONCE";
     static final String ACTION_SNOOZE = "com.habbitstrick.app.SNOOZE";
+    static final String ACTION_DONE = "com.habbitstrick.app.DONE";
     static final String CHANNEL = "reminders";
 
     static SharedPreferences prefs(Context c) {
@@ -71,6 +72,62 @@ public class Reminders {
         return i;
     }
 
+    /** True when this reminder time still exists, so a fired alarm should re-arm. */
+    static boolean stillScheduled(Context c, String id, String time) {
+        try {
+            JSONArray arr = new JSONArray(prefs(c).getString("rem", "[]"));
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject t = arr.getJSONObject(i);
+                if (!id.equals(t.optString("id"))) continue;
+                JSONArray times = t.optJSONArray("times");
+                if (times == null) return false;
+                for (int j = 0; j < times.length(); j++) {
+                    if (time.equals(times.optString(j))) return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    static boolean canExact(Context c) {
+        if (Build.VERSION.SDK_INT < 31) return true;
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        return am != null && am.canScheduleExactAlarms();
+    }
+
+    /** Sets the next single alarm for one reminder time. It re-arms itself after it fires. */
+    static void scheduleOne(Context c, AlarmManager am, String id, String time) {
+        try {
+            if (am == null) am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            String[] hm = time.split(":");
+            if (hm.length != 2) return;
+            int h = Integer.parseInt(hm[0]);
+            int m = Integer.parseInt(hm[1]);
+            int code = (id + "|" + time).hashCode();
+            Intent in = baseIntent(c);
+            in.putExtra("id", id);
+            in.putExtra("time", time);
+            PendingIntent pi = PendingIntent.getBroadcast(c, code, in,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, h);
+            cal.set(Calendar.MINUTE, m);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            if (cal.getTimeInMillis() <= System.currentTimeMillis() + 2000) {
+                cal.add(Calendar.DAY_OF_YEAR, 1);
+            }
+            if (canExact(c)) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+            } else {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     static void schedule(Context c) {
         AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
@@ -105,21 +162,7 @@ public class Reminders {
                     int h = Integer.parseInt(hm[0]);
                     int m = Integer.parseInt(hm[1]);
                     int code = (id + "|" + time).hashCode();
-                    Intent in = baseIntent(c);
-                    in.putExtra("id", id);
-                    in.putExtra("time", time);
-                    PendingIntent pi = PendingIntent.getBroadcast(c, code, in,
-                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                    Calendar cal = Calendar.getInstance();
-                    cal.set(Calendar.HOUR_OF_DAY, h);
-                    cal.set(Calendar.MINUTE, m);
-                    cal.set(Calendar.SECOND, 0);
-                    cal.set(Calendar.MILLISECOND, 0);
-                    if (cal.getTimeInMillis() <= System.currentTimeMillis()) {
-                        cal.add(Calendar.DAY_OF_YEAR, 1);
-                    }
-                    am.setInexactRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),
-                            AlarmManager.INTERVAL_DAY, pi);
+                    scheduleOne(c, am, id, time);
                     codes.add(String.valueOf(code));
                 }
             }
@@ -159,6 +202,13 @@ public class Reminders {
                 if (!from.isEmpty() && today.compareTo(from) < 0) return;
                 String date = t.optString("date", "");
                 if (!date.isEmpty() && !date.equals(today)) return;
+                JSONArray vac = t.optJSONArray("vac");
+                if (vac != null) {
+                    for (int i = 0; i < vac.length(); i++) {
+                        JSONObject r = vac.optJSONObject(i);
+                        if (r != null && today.compareTo(r.optString("a")) >= 0 && today.compareTo(r.optString("b")) <= 0) return;
+                    }
+                }
                 JSONArray days = t.optJSONArray("days");
                 if (days != null) {
                     int d = (now.get(Calendar.DAY_OF_WEEK) + 5) % 7;
@@ -169,7 +219,7 @@ public class Reminders {
                     if (!ok) return;
                 }
             }
-            show(c, id, t.optString("name", "your task"));
+            show(c, id, t.optString("name", "your task"), t.optBoolean("q", false));
         } catch (Exception ignored) {
         }
     }
@@ -182,7 +232,7 @@ public class Reminders {
         nm.createNotificationChannel(ch);
     }
 
-    static void show(Context c, String id, String name) {
+    static void show(Context c, String id, String name, boolean quit) {
         if (Build.VERSION.SDK_INT >= 33
                 && ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -202,16 +252,62 @@ public class Reminders {
         PendingIntent pSnooze = PendingIntent.getBroadcast(c, ("s" + id).hashCode(), sn,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        Notification n = new NotificationCompat.Builder(c, CHANNEL)
+        NotificationCompat.Builder nb = new NotificationCompat.Builder(c, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notif)
                 .setContentTitle("Habbit Strick")
-                .setContentText("Time for: " + name)
+                .setContentText((quit ? "Keep the rule: " : "Time for: ") + name)
                 .setContentIntent(pOpen)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .addAction(0, "Snooze 10 min", pSnooze)
-                .build();
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        if (!"test".equals(id)) {
+            Intent dn = new Intent(c, ReminderReceiver.class);
+            dn.setAction(ACTION_DONE);
+            dn.putExtra("id", id);
+            dn.putExtra("nid", nid);
+            PendingIntent pDone = PendingIntent.getBroadcast(c, ("d" + id).hashCode(), dn,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            nb.addAction(0, quit ? "Followed" : "Done", pDone);
+        }
+        nb.addAction(0, "Snooze 10 min", pSnooze);
+        Notification n = nb.build();
         NotificationManagerCompat.from(c).notify(nid, n);
+    }
+
+    /** Marks a task done from the notification. The web page applies it next time it opens. */
+    static void markDone(Context c, String id, int nid) {
+        NotificationManagerCompat.from(c).cancel(nid);
+        if (id == null) return;
+        try {
+            SharedPreferences p = prefs(c);
+            String today = ymd(Calendar.getInstance());
+            JSONArray q = new JSONArray(p.getString("wq", "[]"));
+            JSONObject e = new JSONObject();
+            e.put("d", today);
+            e.put("id", id);
+            e.put("v", 1);
+            q.put(e);
+            JSONArray done = new JSONArray(p.getString("doneIds", "[]"));
+            boolean had = false;
+            for (int i = 0; i < done.length(); i++) {
+                if (id.equals(done.optString(i))) had = true;
+            }
+            if (!had) done.put(id);
+            JSONArray items = new JSONArray(p.getString("wItems", "[]"));
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject o = items.getJSONObject(i);
+                if (id.equals(o.optString("id"))) o.put("done", true);
+            }
+            int wd = p.getInt("wDone", 0) + (had ? 0 : 1);
+            p.edit()
+                    .putString("wq", q.toString())
+                    .putString("doneIds", done.toString())
+                    .putString("doneDate", today)
+                    .putString("wItems", items.toString())
+                    .putInt("wDone", wd)
+                    .apply();
+        } catch (Exception ignored) {
+        }
+        HabitWidget.refresh(c);
     }
 
     static void snooze(Context c, String id, int nid) {

@@ -183,6 +183,53 @@ body.big .wrap{zoom:1.12}
 .bgc span{font-size:11.5px;color:var(--muted);line-height:1.2;display:block;margin-top:2px}
 .cmp{display:flex;gap:10px;align-items:baseline;margin:4px 0 8px}
 .cmp b{font:800 34px var(--display)}
+
+.todh{font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 2px 8px}
+.sw{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px;align-items:center}
+.sw button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
+.sw button.on{border-color:var(--text)}
+.sw button.none{width:auto;padding:0 12px;border-radius:15px;background:var(--card2);border:1px solid var(--line);color:var(--muted);font:500 12px var(--sans)}
+.sw button.none.on{border-color:var(--text);color:var(--text)}
+.chal{display:flex;gap:16px;align-items:center;margin-bottom:12px;min-height:0}
+.chal .ring{margin:0}
+.sg{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+.conf{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:120}
+.conf i{position:absolute;top:-16px;width:8px;height:14px;border-radius:2px;animation:cf 1.8s ease-in forwards}
+@keyframes cf{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
+#tour{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:grid;place-items:end center;padding:18px 18px calc(110px + env(safe-area-inset-bottom,0px))}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:22px;width:min(100%,420px)}
+.tcard h3{font:700 22px var(--display);margin:10px 0 8px}
+.tcard p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.td{display:flex;gap:6px}.td i{width:20px;height:4px;border-radius:2px;background:var(--line)}.td i.on{background:var(--accent)}
+body.light{--bg:#f4f4f7;--card:#ffffff;--card2:#eeeef2;--line:rgba(0,0,0,.1);--text:#141416;--muted:#6b6b73;background:radial-gradient(circle at 90% -5%,rgba(255,79,109,.10),transparent 40%),#f4f4f7}
+body.light .tile{background:#fff}
+body.light .tabs{background:rgba(255,255,255,.88);border-color:rgba(0,0,0,.08)}
+body.light .tab.on{background:rgba(0,0,0,.07)}
+body.light .rt{stroke:rgba(0,0,0,.1)}
+body.light .chk{border-color:rgba(0,0,0,.3)}
+body.light .bd{background:rgba(0,0,0,.08)}
+body.light input,body.light select,body.light textarea{background:#fff}
+body.light .bar{background:rgba(0,0,0,.1)}
+body.light .c{background:rgba(0,0,0,.08)}
+body.light .c.x{background:rgba(0,0,0,.04)}
+body.light .c.l0{background:rgba(0,0,0,.18)}
+body.light .heat{background:linear-gradient(180deg,#ffe6ea,#ffc9d3);border-color:rgba(255,79,109,.3)}
+body.light .hl{color:rgba(0,0,0,.6)}
+body.light .hr{color:#2a2a2e}
+body.light .banner{background:#ffeef1;border-color:rgba(255,79,109,.3)}
+body.light .swr .ab{background:#e3e3e8;color:#141416;border-left-color:rgba(0,0,0,.08)}
+body.light .swr .ab.dl{background:#ffd9df;color:#c01f3c}
+body.light .swr.lift{box-shadow:0 12px 30px rgba(0,0,0,.2)}
+body.light .wd.sel button{background:#141416;color:#fff;border-color:#141416}
+body.light .bars .bc i{background:rgba(0,0,0,.12)}
+body.light .bars .bc.hi i{background:var(--accent)}
+body.light .bgc .ic{background:rgba(0,0,0,.08)}
+body.light .cd{background:rgba(0,0,0,.06)}
+body.light .cd.l0{background:rgba(0,0,0,.15)}
+body.light #toast{background:#141416;color:#fff}
+body.light #toast .tu{color:#ff8fa3}
+body.light .lockscr{background:var(--bg)}
+body.light #tour{background:rgba(0,0,0,.35)}
 </style>
 </head>
 <body>
@@ -202,7 +249,7 @@ body.big .wrap{zoom:1.12}
 var OLD='dailytracker.v1',VKEY='habbitstrick.vault';
 var NAT=(typeof window.Android==='object'&&window.Android)?window.Android:null;
 function nat(m,a){try{if(NAT&&typeof NAT[m]==='function')return NAT[m].apply(NAT,a||[]);}catch(e){}return undefined;}
-function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},timer:null};}
+function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],timer:null};}
 function norm(o){
   if(!o||typeof o!=='object')o={};
   if(!Array.isArray(o.tasks))o.tasks=[];
@@ -212,6 +259,7 @@ function norm(o){
   if(!o.seen||typeof o.seen!=='object')o.seen={};
   if(!o.skip||typeof o.skip!=='object')o.skip={};
   if(!o.broke||typeof o.broke!=='object')o.broke={};
+  if(!Array.isArray(o.vac))o.vac=[];
   if(o.timer===undefined)o.timer=null;
   return o;
 }
@@ -222,6 +270,8 @@ var CATS=['General','Work','Study','Health','Home','Personal'];
 var CATCOL={General:'#8d8d94',Work:'#7fb5ff',Study:'#ffc857',Health:'#5ee0a0',Home:'#ff9f6b',Personal:'#ff8fa3'};
 var TPL=[{n:'Drink water',cat:'Health',t:8,u:'glasses',s:1,tm:false},{n:'Workout',cat:'Health',t:45,u:'min',tm:true},{n:'Read',cat:'Study',t:20,u:'min',tm:true},{n:'Meditate',cat:'Personal',t:10,u:'min',tm:true},{n:'Walk',cat:'Health',t:30,u:'min',tm:true},{n:'Study session',cat:'Study',t:60,u:'min',tm:true},{n:'Write journal',cat:'Personal',t:1,u:'',tm:false},{n:'Sleep before 11',cat:'Health',t:1,u:'',tm:false},{n:'Clean room',cat:'Home',t:1,u:'',tm:false},{n:'No smoking',cat:'Health',t:1,u:'',tm:false,q:true},{n:'No junk food',cat:'Health',t:1,u:'',tm:false,q:true},{n:'No social media scrolling',cat:'Personal',t:1,u:'',tm:false,q:true},{n:'No phone after 11 pm',cat:'Personal',t:1,u:'',tm:false,q:true}];
 var ACTW=300,CELLW=58;
+var AUTO={name:'',msg:''},autoT=null,vmsg='',tourI=-1;
+var SWC=['#ff4f6d','#ff9f6b','#ffc857','#5ee0a0','#4fd1c5','#7fb5ff','#c4c4cc'];
 var UPD={chk:false,has:false,name:'',code:0,notes:'',busy:false,pct:0,msg:'',cur:'',later:false,checked:false};
 var TQ='',TC='All',calM=null,undoSnap=null,keepStrip=null,stripStart=null,stripCount=0,liveDate=null,stripT=null;
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -241,7 +291,7 @@ function unb(s){var r=atob(s),a=new Uint8Array(r.length);for(var i=0;i<r.length;
 function derive(pw,s){return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']).then(function(m){return crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);});}
 function enc(text){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(text)).then(function(ct){return {s:b64(salt),i:b64(iv),d:b64(ct)};});}
 function persist(){return enc(JSON.stringify(S)).then(function(v){localStorage.setItem(VKEY,JSON.stringify(v));});}
-function save(){if(!key)return;W=null;q=q.then(persist).catch(function(){});syncNative();}
+function save(){if(!key)return;W=null;q=q.then(persist).catch(function(){});syncNative();if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,20000);}}
 function decryptVault(v,k){return crypto.subtle.decrypt({name:'AES-GCM',iv:unb(v.i)},k,unb(v.d)).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));});}
 function unlockWith(v,pw){var s=unb(v.s);return derive(pw,s).then(function(k){return decryptVault(v,k).then(function(o){S=norm(o);key=k;salt=s;});});}
 
@@ -263,7 +313,7 @@ function byId(id){for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].id===id)return 
 function tgt(t){return t.target>0?+t.target:1;}
 function sched(t){return t.sched||'daily';}
 function val(date,id){var l=S.log[date];var v=l&&l[id];return v?+v:0;}
-function isDone(date,t){return val(date,t.id)>=tgt(t)-1e-9;}
+function isDone(date,t){if(isWT(t))return wkSum(t,date,true)>=wkT(t)-1e-9;return val(date,t.id)>=tgt(t)-1e-9;}
 function setVal(date,id,v){var l=S.log[date]||(S.log[date]={});v=Math.max(0,Math.round(v*100)/100);if(v>0)l[id]=v;else delete l[id];}
 function active(t,date){if(t.type==='once')return t.date===date;return t.created<=date&&(!t.archived||t.archived>date);}
 function isBroke(date,t){var k=S.broke&&S.broke[date];return !!(k&&k[t.id]);}
@@ -272,11 +322,17 @@ function isSkipped(date,t){var k=S.skip&&S.skip[date];return !!(k&&k[t.id]);}
 function onDay(t,date){
   if(!active(t,date))return false;
   if(isSkipped(date,t))return false;
+  if(inVac(date))return false;
   if(t.type==='once')return true;
   if(sched(t)==='days')return (t.days||[]).indexOf(dow(date))>=0;
   return true;
 }
-function isWeekly(t){return t.type!=='once'&&sched(t)==='weekly';}
+function isWT(t){return t.type!=='once'&&sched(t)==='wtotal';}
+function isWeekly(t){return t.type!=='once'&&(sched(t)==='weekly'||sched(t)==='wtotal');}
+function wkT(t){return isWT(t)?(+t.wt>0?+t.wt:1):(t.wk||3);}
+function inVac(date){var v=S.vac||[];for(var i=0;i<v.length;i++)if(date>=v[i].a&&date<=v[i].b)return true;return false;}
+function tcol(t){return t.color||CATCOL[t.cat]||'#8d8d94';}
+function wkSum(t,date,upto){var m=shift(date,-dow(date)),n=0;for(var i=0;i<7;i++){var d=shift(m,i);if(upto&&d>date)break;if(t.created<=d)n+=val(d,t.id);}return Math.round(n*100)/100;}
 function dayList(date){return S.tasks.filter(function(t){return onDay(t,date);});}
 function skippedList(date){return S.tasks.filter(function(t){return active(t,date)&&isSkipped(date,t);});}
 function sortPinned(a){var p=[],o=[];a.forEach(function(t){(t.pin?p:o).push(t);});return p.concat(o);}
@@ -284,12 +340,13 @@ function dayStat(date){
   var a=dayList(date),d=0,n=0;
   a.forEach(function(t){
     var dn=isDone(date,t);
-    if(isWeekly(t)){if(dn){d++;n++;}}
+    if(isWeekly(t)){var rd=dn;if(isWT(t))rd=dn&&val(date,t.id)>0&&(wkSum(t,date,true)-val(date,t.id))<wkT(t)-1e-9;if(rd){d++;n++;}}
     else{n++;if(dn)d++;}
   });
   return {total:n,done:d,pct:n?d/n:null};
 }
 function weekCount(t,date){
+  if(isWT(t))return wkSum(t,date,false);
   var m=shift(date,-dow(date)),n=0;
   for(var i=0;i<7;i++){var d=shift(m,i);if(t.created<=d&&isDone(d,t))n++;}
   return n;
@@ -390,6 +447,8 @@ function hap(ms){
 function applyPrefs(){
   var m=S.meta||{};
   document.body.classList.toggle('amoled',m.theme==='amoled');
+  document.body.classList.toggle('light',m.theme==='light');
+  var cs=document.querySelector('meta[name=color-scheme]');if(cs)cs.setAttribute('content',m.theme==='light'?'light':'dark');
   document.body.classList.toggle('big',m.text==='large');
 }
 function applyQueue(){
@@ -413,7 +472,7 @@ function stopTimer(silent){
   if(!S.timer)return;
   var tm=S.timer,t=byId(tm.id),m=elapsedMin();
   if(t){
-    var prior=val(tm.date,tm.id),nv=Math.min(prior+m,Math.max(tgt(t),prior));
+    var prior=val(tm.date,tm.id),nv=isWT(t)?prior+m:Math.min(prior+m,Math.max(tgt(t),prior));
     setVal(tm.date,tm.id,nv);
   }
   S.timer=null;save();
@@ -423,14 +482,14 @@ function checkTimer(){
   if(!S.timer)return false;
   var tm=S.timer,t=byId(tm.id);
   if(!t){S.timer=null;save();return true;}
-  if(val(tm.date,tm.id)+elapsedMin()>=tgt(t)){stopTimer(true);toast('Timer done: '+t.name);return true;}
+  if(!isWT(t)&&val(tm.date,tm.id)+elapsedMin()>=tgt(t)){stopTimer(true);toast('Timer done: '+t.name);return true;}
   return false;
 }
 function tick(){
   if(!key||!S.timer)return;
   if(checkTimer()){render();return;}
   var tm=S.timer,t=byId(tm.id);if(!t)return;
-  var tg=tgt(t),tot=val(tm.date,tm.id)+elapsedMin();
+  var wt0=isWT(t),tg=wt0?wkT(t):tgt(t),tot=(wt0?wkSum(t,tm.date,true):val(tm.date,tm.id))+elapsedMin();
   var lab=document.querySelector('[data-live="'+tm.id+'"]');
   if(lab)lab.textContent=fmtNum(tot)+' / '+fmtNum(tg)+' min, '+mmss(elapsedMin());
   var bar=document.querySelector('[data-bar="'+tm.id+'"]');
@@ -444,8 +503,8 @@ function syncNative(){
     var t=today(),st=dayStat(t),w=getW(),rem=[],done=[];
     S.tasks.forEach(function(x){
       if(isDone(t,x))done.push(x.id);
-      if(x.rem&&x.rem.length&&!x.archived&&(x.type==='daily'||x.date>=t)){
-        rem.push({id:x.id,name:x.name,times:x.rem,days:(x.type==='daily'&&sched(x)==='days')?(x.days||[]):null,date:x.type==='once'?x.date:null,from:x.created||x.date});
+      if(x.rem&&x.rem.length&&!x.archived&&(x.type==='daily'||x.date>=t)&&!inVac(t)){
+        rem.push({id:x.id,name:x.name,times:x.rem,days:(x.type==='daily'&&sched(x)==='days')?(x.days||[]):null,date:x.type==='once'?x.date:null,from:x.created||x.date,q:isQuit(x),vac:(S.vac&&S.vac.length)?S.vac:null});
       }
     });
     var lst=sortPinned(dayList(t)).filter(function(x){return tgt(x)<=1&&!x.timer&&!isWeekly(x);});
@@ -470,6 +529,9 @@ function openApp(){
   applyPrefs();checkTimer();
   clearInterval(tickId);tickId=setInterval(tick,1000);
   applyQueue();render();syncNative();
+  AUTO.name=String(nat('autoFolderName')||'');
+  if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,6000);}
+  if(!S.meta.tour&&tourI<0)setTimeout(function(){if(key&&!S.meta.tour&&tourI<0)showTour();},600);
   if(NAT&&!UPD.checked&&!UPD.chk)checkUpd(false);
 }
 function lkgo(pwArg){
@@ -528,14 +590,14 @@ function boot(){
 document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}else if(key){applyQueue();}});
 
 /* ---------- task form ---------- */
-function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do'};}
+function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',tod:'any',color:'',chal:0,wt:150};}
 function draftFrom(t){
   var d=t.type==='once'?t.date:t.created;
-  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do'};
+  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do',tod:t.tod||'any',color:t.color||'',chal:t.chal||0,wt:t.wt||150};
 }
 function opts(list,sel){return list.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+c+'</option>';}).join('');}
 function formHtml(){
-  var f=F,h='<div class="panel">';
+  var f=F,h='<div class="panel">',isw=(f.type==='daily'&&f.sched==='wtotal'&&f.kind!=='quit');
   if(f.mode==='add'){h+='<div class="fl" style="margin-top:0">Quick start</div><div class="tpls">'+TPL.map(function(x,i){return '<button data-a="tpl" data-v="'+i+'">'+esc(x.n)+'</button>';}).join('')+'</div>';}
   h+='<div class="fl" style="margin-top:0">'+(f.mode==='add'?'New task':'Edit task')+'</div><input type="text" id="fname" data-f="name" placeholder="'+(f.kind==='quit'?'What do you want to quit? e.g. No sugar':'What do you want to get done?')+'" maxlength="120" value="'+esc(f.name)+'">';
   h+='<div class="fl">Habit type</div><div class="seg"><button data-a="kind" data-v="do" class="'+(f.kind!=='quit'?'on':'')+'">Build a habit</button><button data-a="kind" data-v="quit" class="'+(f.kind==='quit'?'on':'')+'">Quit a habit</button></div>';
@@ -543,23 +605,32 @@ function formHtml(){
   h+='<div class="fr"><select data-f="cat">'+opts(CATS,f.cat)+'</select><select data-f="type"><option value="daily"'+(f.type==='daily'?' selected':'')+'>Repeats</option><option value="once"'+(f.type==='once'?' selected':'')+'>Only on that date</option></select></div>';
   h+='<div class="fl">'+(f.type==='once'?'Date':'Starts on')+'</div><input type="date" data-f="date" value="'+esc(f.date)+'">';
   if(f.type==='daily'){
-    h+='<div class="fl">Schedule</div><select data-f="sched"><option value="daily"'+(f.sched==='daily'?' selected':'')+'>Every day</option><option value="days"'+(f.sched==='days'?' selected':'')+'>Specific weekdays</option><option value="weekly"'+(f.sched==='weekly'?' selected':'')+'>A number of times per week</option></select>';
+    h+='<div class="fl">Schedule</div><select data-f="sched"><option value="daily"'+(f.sched==='daily'?' selected':'')+'>Every day</option><option value="days"'+(f.sched==='days'?' selected':'')+'>Specific weekdays</option><option value="weekly"'+(f.sched==='weekly'?' selected':'')+'>A number of times per week</option>'+(f.kind!=='quit'?'<option value="wtotal"'+(f.sched==='wtotal'?' selected':'')+'>A total amount per week</option>':'')+'</select>';
     if(f.sched==='days'){
       h+='<div class="days">';
       for(var i=0;i<7;i++)h+='<button data-a="fday" data-v="'+i+'" class="'+(f.days.indexOf(i)>=0?'on':'')+'" aria-label="'+DN[i]+'">'+DL[i]+'</button>';
       h+='</div><p class="hint">Days you did not pick are rest days and never break your streak.</p>';
     }
+    if(isw){
+      h+='<div class="fl">Weekly total goal</div><div class="fr" style="margin-top:0"><input type="number" inputmode="decimal" min="0.1" step="any" data-f="wt" value="'+esc(f.wt)+'"><input type="text" data-f="unit" placeholder="Unit (minutes, pages)" maxlength="16" value="'+esc(f.timer?'min':f.unit)+'"'+(f.timer?' disabled':'')+'></div>';
+      h+='<label class="chkrow"><input type="checkbox" data-f="timer"'+(f.timer?' checked':'')+'><span>Use a timer (total is in minutes)</span></label>';
+      if(!f.timer)h+='<div class="fl">Each tap on plus adds</div><input type="number" inputmode="decimal" min="0.1" step="any" data-f="step" value="'+esc(f.step)+'">';
+      h+='<p class="hint">Add progress on any day. The goal is met when the week total is reached.</p>';
+    }
     if(f.sched==='weekly'){
       h+='<div class="fl">Times per week</div><input type="number" inputmode="numeric" min="1" max="7" data-f="wk" value="'+esc(f.wk)+'"><p class="hint">Flexible: do it on any days. It never counts against a day.</p>';
     }
   }
-  if(f.kind!=='quit'){
+  if(f.kind!=='quit'&&!isw){
   h+='<div class="fl">Daily goal</div><div class="fr" style="margin-top:0"><input type="number" inputmode="decimal" min="0.1" step="any" data-f="target" value="'+esc(f.target)+'"><input type="text" data-f="unit" placeholder="Unit (glasses, pages)" maxlength="16" value="'+esc(f.timer?'min':f.unit)+'"'+(f.timer?' disabled':'')+'></div>';
   h+='<label class="chkrow"><input type="checkbox" data-f="timer"'+(f.timer?' checked':'')+'><span>Use a timer (goal is in minutes)</span></label>';
   if(!f.timer&&Number(f.target)>1){
     h+='<div class="fl">Each tap on plus adds</div><input type="number" inputmode="decimal" min="0.1" step="any" data-f="step" value="'+esc(f.step)+'">';
   }
   }
+  h+='<div class="fl">Time of day</div><select data-f="tod"><option value="any"'+(f.tod==='any'?' selected':'')+'>Anytime</option><option value="morning"'+(f.tod==='morning'?' selected':'')+'>Morning</option><option value="afternoon"'+(f.tod==='afternoon'?' selected':'')+'>Afternoon</option><option value="evening"'+(f.tod==='evening'?' selected':'')+'>Evening</option></select>';
+  h+='<div class="fl">Colour</div><div class="sw"><button class="none'+(!f.color?' on':'')+'" data-a="col" data-v="" aria-label="Category colour">Auto</button>'+SWC.map(function(c){return '<button class="'+(f.color===c?'on':'')+'" style="background:'+c+'" data-a="col" data-v="'+c+'" aria-label="Colour"></button>';}).join('')+'</div>';
+  if(f.type==='daily')h+='<div class="fl">Challenge</div><select data-f="chal">'+[[0,'No challenge'],[21,'21 days'],[30,'30 days'],[66,'66 days (habit science)']].map(function(o){return '<option value="'+o[0]+'"'+(String(f.chal)===String(o[0])?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>';
   h+='<div class="fl">Reminders</div>';
   if(f.rem.length){h+='<div class="chips">'+f.rem.map(function(r,i){return '<span class="chip">'+esc(r)+'<button data-a="remrm" data-v="'+i+'" aria-label="Remove reminder">x</button></span>';}).join('')+'</div>';}
   if(f.rem.length<4)h+='<div class="fr"><input type="time" id="rt" value="09:00"><button class="btn ghost sm" data-a="remadd">Add reminder</button></div>';
@@ -578,8 +649,11 @@ function formSave(){
   var wk=Math.max(1,Math.min(7,Math.round(Number(f.wk)||3)));
   var date=f.date||today();
   var sc=f.type==='once'?'daily':f.sched;
+  var iswt=(f.type==='daily'&&sc==='wtotal'&&!quit);
+  if(f.type==='daily'&&sc==='wtotal'&&quit)sc='daily';
+  if(iswt&&!(Number(f.wt)>0)){ferr='Set a weekly total above 0.';render();return;}
   if(f.type==='daily'&&sc==='days'&&!f.days.length){ferr='Pick at least one weekday.';render();return;}
-  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:tg,unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do'};
+  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:iswt?1:tg,wt:iswt?Number(f.wt):0,tod:f.tod||'any',color:f.color||'',chal:(f.type==='daily'?(+f.chal||0):0),unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do'};
   if(f.mode==='add'){
     var t={id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),created:date,date:date};
     for(var k in fields)t[k]=fields[k];
@@ -600,7 +674,7 @@ function onField(e){
   var el=e.target,f=el.getAttribute&&el.getAttribute('data-f');
   if(!f||!F)return;
   var v=(el.type==='checkbox')?el.checked:el.value;
-  if(f==='target'||f==='step'||f==='wk')F[f]=(v===''?'':Number(v));else F[f]=v;
+  if(f==='target'||f==='step'||f==='wk'||f==='wt')F[f]=(v===''?'':Number(v));else F[f]=v;
   if(e.type==='change'&&(f==='type'||f==='sched'||f==='timer'||f==='target')){
     if(f==='timer'&&v)F.unit='min';
     if(f==='timer'&&!v)F.unit='';
@@ -617,33 +691,45 @@ function backupDue(){
   return now-last>14*86400000&&now>(S.meta.bkSnooze||0);
 }
 function rowHtml(t){
-  var v=val(cur,t.id),tg=tgt(t),done=v>=tg-1e-9,multi=tg>1||t.timer;
+  var wtt=isWT(t),v=wtt?wkSum(t,cur,true):val(cur,t.id),tg=wtt?wkT(t):tgt(t),done=isDone(cur,t),multi=tg>1||t.timer||wtt;
   var run=!!(S.timer&&S.timer.id===t.id&&S.timer.date===cur);
   var disp=v+(run?elapsedMin():0);
-  var sub=['<i class="cdot" style="background:'+(CATCOL[t.cat]||'#8d8d94')+'"></i>'+esc(t.cat)];
+  var sub=['<i class="cdot" style="background:'+tcol(t)+'"></i>'+esc(t.cat)];
   if(t.type==='daily'){
     if(sched(t)==='days')sub.push(dayNames(t.days));
-    else if(isWeekly(t))sub.push(weekCount(t,cur)+'/'+(t.wk||3)+' this week');
+    else if(isWT(t))sub.push('Weekly total');else if(isWeekly(t))sub.push(weekCount(t,cur)+'/'+(wkT(t))+' this week');
   }
   if(t.rem&&t.rem.length)sub.push('Remind '+esc(t.rem.join(', ')));
+  if(t.chal)sub.push('Challenge '+Math.min(t.chal,chalDone(t))+'/'+t.chal);
   var q=isQuit(t),brk=q&&isBroke(cur,t);
   if(q)sub.splice(1,0,'Quit habit');
   var h='<div class="swr" data-id="'+t.id+'"><div class="acts"><div class="al">'+(done?'Undo':(q?'Followed':'Done'))+'</div><div class="ar"><button class="ab" data-a="pin" data-id="'+t.id+'">'+(t.pin?'Unpin':'Pin')+'</button><button class="ab" data-a="skip" data-id="'+t.id+'">Skip</button><button class="ab" data-a="edit" data-id="'+t.id+'">Edit</button><button class="ab dl" data-a="del" data-id="'+t.id+'">'+(delId===t.id?'Confirm':'Delete')+'</button></div></div>';
   h+='<div class="tk'+(done?' done':'')+(q?' qh':'')+(brk?' broke':'')+'" data-id="'+t.id+'"'+(openId===t.id?' style="transform:translateX(-'+ACTW+'px)"':'')+'>';
-  if(!q)h+='<button class="chk'+(done?' on':'')+'" data-a="tog" data-id="'+t.id+'" aria-label="Toggle">'+CHECK+'</button>';
+  if(!q&&!wtt)h+='<button class="chk'+(done?' on':'')+'"'+(t.color?' style="border-color:'+t.color+(done?';background:'+t.color:'')+'"':'')+' data-a="tog" data-id="'+t.id+'" aria-label="Toggle">'+CHECK+'</button>';
   h+='<div class="tn" data-a="detail" data-id="'+t.id+'"><div class="nm">'+(t.pin?'<i class="pdot"></i>':'')+esc(t.name)+'</div>';
   if(q){
     h+='<div class="foot" style="'+(brk?'color:var(--pink)':'')+'">'+(brk?'You broke the rule today':(done?'You followed the rule today':'Did you keep the rule today?'))+'</div><div class="foot">'+sub.join(' · ')+'</div>';
   }else if(multi){
-    h+='<div class="bar"><i data-bar="'+t.id+'" style="width:'+Math.min(100,disp/tg*100)+'%"></i></div><div class="foot" data-live="'+(run?t.id:'')+'">'+fmtNum(disp)+' / '+fmtNum(tg)+(t.unit?' '+esc(t.unit):'')+(run?', '+mmss(elapsedMin()):'')+'</div><div class="foot">'+sub.join(' · ')+'</div>';
+    h+='<div class="bar"><i data-bar="'+t.id+'" style="width:'+Math.min(100,disp/tg*100)+'%"></i></div><div class="foot" data-live="'+(run?t.id:'')+'">'+fmtNum(disp)+' / '+fmtNum(tg)+(t.unit?' '+esc(t.unit):'')+(wtt?' this week':'')+(run?', '+mmss(elapsedMin()):'')+'</div><div class="foot">'+sub.join(' · ')+'</div>';
   }else{
     h+='<div class="foot">'+sub.join(' · ')+'</div>';
   }
   h+='</div>';
   if(q)h+='<div class="qb"><button class="f'+(done?' on':'')+'" data-a="follow" data-id="'+t.id+'">Followed</button><button class="b'+(brk?' on':'')+'" data-a="broke" data-id="'+t.id+'">Broke it</button></div>';
   else if(t.timer)h+='<div class="stp"><button class="mb'+(run?' run':'')+'" data-a="timer" data-id="'+t.id+'" aria-label="Timer">'+(run?STOP:PLAY)+'</button></div>';
-  else if(tg>1)h+='<div class="stp"><button class="mb" data-a="dec" data-id="'+t.id+'" aria-label="Less">-</button><button class="mb" data-a="inc" data-id="'+t.id+'" aria-label="More">+</button></div>';
+  else if(tg>1||wtt)h+='<div class="stp"><button class="mb" data-a="dec" data-id="'+t.id+'" aria-label="Less">-</button><button class="mb" data-a="inc" data-id="'+t.id+'" aria-label="More">+</button></div>';
   h+='</div></div>';
+  return h;
+}
+var TODS=[['morning','Morning'],['afternoon','Afternoon'],['evening','Evening'],['any','Anytime']];
+function rowsHtml(list){
+  var any=list.some(function(t){return t.tod&&t.tod!=='any';});
+  if(!any)return list.map(rowHtml).join('');
+  var h='';
+  TODS.forEach(function(g){
+    var sub=list.filter(function(t){return (t.tod||'any')===g[0];});
+    if(sub.length)h+='<div class="todh">'+g[1]+'</div>'+sub.map(rowHtml).join('');
+  });
   return h;
 }
 function noteCard(){
@@ -720,6 +806,7 @@ function renderToday(){
   var list=sortPinned(dayList(cur)),st=dayStat(cur),pct=Math.round((st.pct||0)*100),h='';
   h+=updBanner();
   h+=reportCard();
+  if(inVac(today()))h+='<div class="banner"><p>Vacation mode is on. Tasks and reminders are paused and your streak is safe.</p></div>';
   if(backupDue())h+='<div class="banner"><p>It has been a while since your last backup. Save a backup file so a lost phone never costs you your history.</p><div class="fr" style="margin-top:0"><button class="btn sm" data-a="bkgo">Back up now</button><button class="btn ghost sm" data-a="bklater">Later</button></div></div>';
   if(F)h+=formHtml();
   var arc=(st.total?st.done/st.total:0)*213.6;
@@ -728,8 +815,8 @@ function renderToday(){
   var t0=today();
   h+='<div class="wk"><div class="m" id="mlab">'+lf(cur,{month:'long',year:'numeric'})+'</div><div class="fr" style="margin:0">'+(cur!==t0?'<button class="btn ghost sm" data-a="gotoday">Today</button>':'')+'<button class="ib" data-a="day" data-v="-7" aria-label="Previous week">'+LEFT+'</button><button class="ib" data-a="day" data-v="7" aria-label="Next week">'+RIGHT+'</button></div></div>'+strip();
   h+='<div class="sec"><h2>Tasks</h2><span class="bd">'+st.done+'/'+st.total+'</span></div>';
-  if(!list.length)h+='<div class="empty">Nothing planned for this day.<br>Tap the plus button to add a task.</div>';
-  else h+='<div id="rows">'+list.map(rowHtml).join('')+'</div><p class="hint" style="text-align:center">Swipe a task right to finish it, left for more. Press and hold to reorder. Slide the date bar to change day, swipe the page to switch tabs.</p>';
+  if(!list.length)h+='<div class="empty">'+(inVac(cur)?'Vacation day. Everything is paused and your streak is safe.':'Nothing planned for this day.<br>Tap the plus button to add a task.')+'</div>';
+  else h+='<div id="rows">'+rowsHtml(list)+'</div><p class="hint" style="text-align:center">Swipe a task right to finish it, left for more. Press and hold to reorder. Slide the date bar to change day, swipe the page to switch tabs.</p>';
   var sk=skippedList(cur);
   if(sk.length){h+='<div class="sec" style="margin-top:18px"><h2>Skipped</h2><span class="bd">'+sk.length+'</span></div>'+sk.map(function(t){return '<div class="skrow"><span class="nm">'+esc(t.name)+'</span><button class="btn ghost sm" data-a="unskip" data-id="'+t.id+'">Restore</button></div>';}).join('');}
   h+=noteCard();
@@ -773,6 +860,17 @@ function weekdayBars(){
   var full=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   return {html:h,best:best>=0?full[best]:null};
 }
+function moodHtml(){
+  var sum=[0,0,0,0,0,0],cnt=[0,0,0,0,0,0],tot=0,d;
+  for(d in S.notes){var n=S.notes[d];if(!n||!n.m)continue;var st=dayStat(d);if(!st.total)continue;sum[n.m]+=st.pct;cnt[n.m]++;tot++;}
+  var h='<div class="bars">',i;
+  for(i=1;i<=5;i++){var p=cnt[i]?Math.round(sum[i]/cnt[i]*100):0;h+='<div class="bc"><em>'+(cnt[i]?p:'')+'</em><i style="height:'+Math.max(4,p)+'%"></i><small>'+MOODS[i-1]+'</small></div>';}
+  h+='</div>';
+  var hs=sum[4]+sum[5],hc=cnt[4]+cnt[5],ls=sum[1]+sum[2],lc=cnt[1]+cnt[2],txt;
+  if(tot>=5&&hc&&lc)txt='On Good or Great days you finish '+Math.round(hs/hc*100)+'% of your tasks. On Rough or Low days it is '+Math.round(ls/lc*100)+'%.';
+  else txt='Log your mood in the daily note for a few more days to see how it links to your habits.';
+  return h+'<p class="hint">'+txt+'</p>';
+}
 function renderDash(){
   var t=today(),w=getW(),f=firstDate(),h='',xi=xpInfo();
   var mon=shift(t,-dow(t)),start=shift(mon,-19*7),cells='';
@@ -794,6 +892,7 @@ function renderDash(){
   h+='<div class="sec" style="margin-top:22px"><h2>30 day trend</h2></div><div class="panel">'+trendSvg()+'</div>';
   var wb=weekdayBars();
   h+='<div class="sec" style="margin-top:22px"><h2>Best weekday</h2></div><div class="panel">'+wb.html+'<p class="hint">'+(wb.best?'Your strongest day is '+wb.best+'.':'Not enough data yet.')+'</p></div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Mood and habits</h2></div><div class="panel">'+moodHtml()+'</div>';
   var c=badgeCtx(),got=0,bh='<div class="bgs">';
   BADGES.forEach(function(b){var ok=b.ok(c);if(ok)got++;bh+='<div class="bgc'+(ok?' on':'')+'"><div class="ic">'+(ok?CHECK:'')+'</div><div><b>'+b.n+'</b><span>'+b.d+'</span></div></div>';});
   bh+='</div>';
@@ -807,12 +906,12 @@ function renderDash(){
       if(onDay(tk,dd)&&!isWeekly(tk)){n++;if(isDone(dd,tk))dn++;}
     }
     if(isWeekly(tk)){
-      var wn=0;for(var j=0;j<4;j++){wn+=Math.min(tk.wk||3,weekCount(tk,shift(t,-7*j)));}
-      n=(tk.wk||3)*4;dn=wn;
+      var wn=0;for(var j=0;j<4;j++){wn+=Math.min(wkT(tk),weekCount(tk,shift(t,-7*j)));}
+      n=(wkT(tk))*4;dn=wn;
     }
     if(!n)return;
     any=true;
-    h+='<div class="pt" data-a="detail" data-id="'+tk.id+'"><div class="pr"><span>'+esc(tk.name)+(tk.archived?' (archived)':'')+'</span><b>'+dn+'/'+n+'</b></div><div class="bar"><i style="width:'+Math.round(dn/n*100)+'%"></i></div></div>';
+    h+='<div class="pt" data-a="detail" data-id="'+tk.id+'"><div class="pr"><span>'+esc(tk.name)+(tk.archived?' (archived)':'')+'<small class="sg">Strength '+strength(tk)+'%</small></span><b>'+dn+'/'+n+'</b></div><div class="bar"><i style="width:'+Math.round(dn/n*100)+'%"></i></div></div>';
   });
   if(!any)h+='<div class="empty">Add an every day task to see progress here.</div>';
   h+='</div>';
@@ -829,6 +928,51 @@ function renderDash(){
 }
 
 /* ---------- task detail ---------- */
+function strength(t){
+  if(t.type==='once')return null;
+  var f=t.created,tdy=today(),v=0,d,lim=shift(tdy,-400);
+  if(f<lim)f=lim;
+  if(isWeekly(t)){
+    var mon=shift(f,-dow(f)),m=Math.pow(.5,1/4),cm=shift(tdy,-dow(tdy));
+    for(d=mon;d<=cm;d=shift(d,7)){
+      var fr=Math.min(1,weekCount(t,d)/wkT(t));
+      if(d===cm&&fr<1)break;
+      v=v*m+fr*(1-m);
+    }
+    return Math.round(v*100);
+  }
+  var nd=sched(t)==='days'?Math.max(1,(t.days||[]).length):7,m2=Math.pow(.5,Math.sqrt(nd/7)/13);
+  for(d=f;d<=tdy;d=shift(d,1)){
+    if(!onDay(t,d))continue;
+    var fr2=Math.min(1,val(d,t.id)/tgt(t));
+    if(d===tdy&&fr2<=0&&!isBroke(d,t))continue;
+    v=v*m2+fr2*(1-m2);
+  }
+  return Math.round(v*100);
+}
+function chalDone(t){var n=0,d=t.created,tdy=today();while(d<=tdy){if(onDay(t,d)&&isDone(d,t))n++;d=shift(d,1);}return n;}
+function chalHtml(t){
+  var n=Math.min(t.chal,chalDone(t)),arc=n/t.chal*213.6;
+  return '<div class="tile chal"><div class="ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="rt"/><circle cx="40" cy="40" r="34" class="rf" style="stroke-dasharray:'+arc+' 213.6"/></svg><div class="rn" style="font-size:18px">'+n+'</div></div><div><div class="lbl">'+t.chal+' day challenge</div><div class="foot">'+(n>=t.chal?'Complete. Well done!':(t.chal-n)+' days to go')+'</div></div></div>';
+}
+var MILES=[7,30,100,365];
+function confetti(){
+  var el=document.createElement('div');el.className='conf';
+  var cols=['#ff4f6d','#ffc857','#5ee0a0','#7fb5ff','#ff8fa3'],h='',i;
+  for(i=0;i<36;i++)h+='<i style="left:'+Math.round(Math.random()*100)+'%;background:'+cols[i%5]+';animation-delay:'+(Math.random()*.4).toFixed(2)+'s"></i>';
+  el.innerHTML=h;document.body.appendChild(el);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},2400);
+}
+function celebrate(id){
+  var t=byId(id);if(!t||cur!==today()||!isDone(cur,t))return;
+  var c=S.meta.cele||(S.meta.cele={}),msg=null,i;
+  if(t.type==='daily'&&!isWeekly(t)){
+    var st=taskWalk(t).cur;
+    for(i=MILES.length-1;i>=0;i--){if(st>=MILES[i]){if((c[id]||0)<MILES[i]){c[id]=MILES[i];msg=t.name+': '+MILES[i]+' day streak!';}break;}}
+  }
+  if(!msg&&t.chal&&chalDone(t)>=t.chal&&!c[id+'c']){c[id+'c']=1;msg='Challenge complete: '+t.name;}
+  if(msg){save();confetti();hap(40);setTimeout(function(){toast(msg);},60);}
+}
 function taskWalk(t){
   var f=t.type==='once'?t.date:t.created,tdy=today(),run=0,best=0,checks=0,d=f,n30=0,d30=0,wk=isWeekly(t);
   while(d<=tdy){
@@ -845,7 +989,7 @@ function taskWalk(t){
     if(wk){continue;}
     if(onDay(t,dd)){n30++;if(isDone(dd,t))d30++;}
   }
-  if(wk){var tot=0;for(var j=0;j<4;j++)tot+=Math.min(t.wk||3,weekCount(t,shift(tdy,-7*j)));n30=(t.wk||3)*4;d30=tot;}
+  if(wk){var tot=0;for(var j=0;j<4;j++)tot+=Math.min(wkT(t),weekCount(t,shift(tdy,-7*j)));n30=(wkT(t))*4;d30=tot;}
   return {cur:run,best:best,checks:checks,rate:n30?Math.round(d30/n30*100):0};
 }
 function renderDetail(){
@@ -856,14 +1000,15 @@ function renderDetail(){
   var info=[esc(t.cat)];
   if(t.type==='once')info.push('Only '+t.date);
   else if(sched(t)==='days')info.push(dayNames(t.days));
-  else if(isWeekly(t))info.push((t.wk||3)+' times a week');
+  else if(isWT(t))info.push(fmtNum(wkT(t))+' '+(t.timer?'min':(t.unit||'units'))+' a week');else if(isWeekly(t))info.push((wkT(t))+' times a week');
   else info.push('Every day');
   if(t.kind==='quit'){var bn=0;for(var bd in S.broke){if(S.broke[bd][t.id])bn++;}info.splice(1,0,'Quit habit, broken '+bn+(bn===1?' time':' times'));}
   if(tg>1||t.timer)info.push('Goal '+fmtNum(tg)+' '+(t.timer?'min':(t.unit||'')));
   if(t.rem&&t.rem.length)info.push('Remind '+esc(t.rem.join(', ')));
   h+='<p class="hint" style="margin:-8px 0 16px">'+info.join(' · ')+'</p>';
   var wk=isWeekly(t);
-  h+='<div class="g2">'+tile(wk?'This week':(t.kind==='quit'?'Clean streak':'Streak'),wk?weekCount(t,tdy)+'/'+(t.wk||3):tw.cur,wk?'Weekly goal':'Longest: <b>'+tw.best+'</b>')+tile(t.kind==='quit'?'Days followed':'Check-ins',tw.checks,t.kind==='quit'?'Rule kept':'Total completed')+tile('30 day rate',tw.rate+'<small>%</small>','Of scheduled days')+'</div>';
+  h+='<div class="g2">'+tile(wk?'This week':(t.kind==='quit'?'Clean streak':'Streak'),wk?weekCount(t,tdy)+'/'+(wkT(t)):tw.cur,wk?'Weekly goal':'Longest: <b>'+tw.best+'</b>')+tile(t.kind==='quit'?'Days followed':'Check-ins',tw.checks,t.kind==='quit'?'Rule kept':'Total completed')+tile('30 day rate',tw.rate+'<small>%</small>','Of scheduled days')+(t.type==='daily'?tile('Strength',strength(t)+'<small>%</small>','Habit strength<br>Forgives a missed day'):'')+'</div>';
+  if(t.chal)h+=chalHtml(t);
   var mon=shift(tdy,-dow(tdy)),start=shift(mon,-19*7),cells='';
   for(var wi=0;wi<20;wi++)for(var r=0;r<7;r++){
     var d=shift(start,wi*7+r),cls='c';
@@ -877,7 +1022,7 @@ function renderDetail(){
   h+='<div class="sec" style="margin-top:22px"><h2>Last 8 weeks</h2></div><div class="panel"><div class="bars">';
   for(var wv=7;wv>=0;wv--){
     var m=shift(mon,-7*wv),n=0,dn=0;
-    if(wk){n=t.wk||3;dn=Math.min(n,weekCount(t,m));}
+    if(wk){n=wkT(t);dn=Math.min(n,weekCount(t,m));}
     else for(var i2=0;i2<7;i2++){var dd=shift(m,i2);if(dd<=tdy&&onDay(t,dd)){n++;if(isDone(dd,t))dn++;}}
     var p=n?Math.round(dn/n*100):0;
     h+='<div class="bc'+(wv===0?' hi':'')+'"><em>'+(n?p:'')+'</em><i style="height:'+Math.max(4,p)+'%"></i><small>'+parse(m).getDate()+'/'+(parse(m).getMonth()+1)+'</small></div>';
@@ -894,6 +1039,7 @@ function renderTasks(){
   h+='<div style="margin-bottom:14px"><button class="btn full" style="margin-top:0" data-a="newtask">Add a new task</button></div>';
   h+='<div class="panel" style="margin-bottom:12px"><input type="text" id="tq" placeholder="Search tasks" value="'+esc(TQ)+'"><select id="tc" style="margin-top:10px"><option'+(TC==='All'?' selected':'')+'>All</option>'+opts(CATS,TC)+'</select></div><div id="tlist">'+taskListHtml()+'</div>';
   h+=extraPanels();
+  h+=toolPanels();
   h+=tasksSecurity();
   return h;
 }
@@ -903,8 +1049,8 @@ function taskListHtml(){
     if(TC!=='All'&&t.cat!==TC)return;
     if(q&&t.name.toLowerCase().indexOf(q)<0)return;
     n++;
-    var meta=t.type==='once'?'Only '+t.date:(t.archived?'Archived':(sched(t)==='days'?dayNames(t.days):isWeekly(t)?(t.wk||3)+' times a week':'Every day'))+' from '+t.created;
-    h+='<div class="tk" style="flex-wrap:wrap"><div class="tn" data-a="detail" data-id="'+t.id+'" style="flex:1 1 140px"><div class="nm">'+esc(t.name)+'</div><div class="foot">'+(t.kind==='quit'?'Quit habit · ':'')+'<i class="cdot" style="background:'+(CATCOL[t.cat]||'#8d8d94')+'"></i>'+esc(t.cat)+' · '+meta+'</div></div><button class="btn ghost sm" data-a="edit" data-id="'+t.id+'">Edit</button>';
+    var meta=t.type==='once'?'Only '+t.date:(t.archived?'Archived':(sched(t)==='days'?dayNames(t.days):isWT(t)?fmtNum(wkT(t))+' '+(t.timer?'min':(t.unit||'units'))+' a week':isWeekly(t)?(wkT(t))+' times a week':'Every day'))+' from '+t.created;
+    h+='<div class="tk" style="flex-wrap:wrap"><div class="tn" data-a="detail" data-id="'+t.id+'" style="flex:1 1 140px"><div class="nm">'+esc(t.name)+'</div><div class="foot">'+(t.kind==='quit'?'Quit habit · ':'')+'<i class="cdot" style="background:'+tcol(t)+'"></i>'+esc(t.cat)+' · '+meta+'</div></div><button class="btn ghost sm" data-a="edit" data-id="'+t.id+'">Edit</button>';
     if(t.type==='daily')h+='<button class="btn ghost sm" data-a="arch" data-id="'+t.id+'">'+(t.archived?'Restore':'Archive')+'</button>';
     h+='<button class="btn danger sm" data-a="del" data-id="'+t.id+'">'+(delId===t.id?'Tap to confirm':'Delete')+'</button></div>';
   });
@@ -913,7 +1059,7 @@ function taskListHtml(){
 }
 function extraPanels(){
   var h='',m=S.meta||{};
-  h+='<div class="sec" style="margin-top:22px"><h2>Appearance</h2></div><div class="panel"><div class="fl" style="margin-top:0">Theme</div><div class="seg"><button data-a="pref" data-k="theme" data-v="dark" class="'+(m.theme!=='amoled'?'on':'')+'">Dark</button><button data-a="pref" data-k="theme" data-v="amoled" class="'+(m.theme==='amoled'?'on':'')+'">Pure black</button></div><div class="fl">Text size</div><div class="seg"><button data-a="pref" data-k="text" data-v="normal" class="'+(m.text!=='large'?'on':'')+'">Normal</button><button data-a="pref" data-k="text" data-v="large" class="'+(m.text==='large'?'on':'')+'">Large</button></div><div class="fl">Vibration feedback</div><div class="seg"><button data-a="pref" data-k="haptic" data-v="1" class="'+(m.haptic!==0?'on':'')+'">On</button><button data-a="pref" data-k="haptic" data-v="0" class="'+(m.haptic===0?'on':'')+'">Off</button></div></div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Appearance</h2></div><div class="panel"><div class="fl" style="margin-top:0">Theme</div><div class="seg"><button data-a="pref" data-k="theme" data-v="dark" class="'+(m.theme!=='amoled'&&m.theme!=='light'?'on':'')+'">Dark</button><button data-a="pref" data-k="theme" data-v="amoled" class="'+(m.theme==='amoled'?'on':'')+'">Pure black</button><button data-a="pref" data-k="theme" data-v="light" class="'+(m.theme==='light'?'on':'')+'">Light</button></div><div class="fl">Text size</div><div class="seg"><button data-a="pref" data-k="text" data-v="normal" class="'+(m.text!=='large'?'on':'')+'">Normal</button><button data-a="pref" data-k="text" data-v="large" class="'+(m.text==='large'?'on':'')+'">Large</button></div><div class="fl">Vibration feedback</div><div class="seg"><button data-a="pref" data-k="haptic" data-v="1" class="'+(m.haptic!==0?'on':'')+'">On</button><button data-a="pref" data-k="haptic" data-v="0" class="'+(m.haptic===0?'on':'')+'">Off</button></div></div>';
   if(NAT){
     var ver=nat('appVersion')||UPD.cur||'';
     h+='<div class="sec" style="margin-top:22px"><h2>App updates</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Version <b>'+esc(ver)+'</b>.'+(UPD.has?' A newer version is ready: <b>'+esc(UPD.name)+'</b>.':'')+'</p>';
@@ -924,6 +1070,58 @@ function extraPanels(){
   }
   return h;
 }
+function toolPanels(){
+  var h='',i;
+  if(NAT){
+    var ex=nat('exactOk'),bt=nat('batteryOk');
+    h+='<div class="sec" style="margin-top:22px"><h2>Reminder tools</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Reminders have a Done button, so you can tick a task straight from the notification.</p><button class="btn sm" data-a="remtest">Send test reminder</button>';
+    h+='<div class="fl">Exact alarms: '+(ex===false?'off':'on')+'</div>';
+    if(ex===false)h+='<p class="hint" style="margin:0 0 8px">Without this permission Android may delay reminders by several minutes.</p><button class="btn ghost sm" data-a="exactset">Allow exact alarms</button>';
+    h+='<div class="fl">Battery restrictions: '+(bt===false?'may delay reminders':'unrestricted')+'</div><p class="hint" style="margin:0 0 8px">On some phones (Xiaomi, Oppo, Vivo, Samsung) the system stops apps in the background. Open settings, choose Habbit Strick, and set battery to Unrestricted. If the test reminder arrives, you are fine.</p>';
+    if(bt===false)h+='<button class="btn ghost sm" data-a="batset">Open battery settings</button>';
+    h+='</div>';
+    var at=0;try{at=+localStorage.getItem('habbitstrick.autoAt')||0;}catch(e){}
+    h+='<div class="sec" style="margin-top:22px"><h2>Automatic backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Pick a folder once. Your encrypted backup is rewritten there after every change, one file per weekday. If that folder syncs with Google Drive, it is also a cloud backup.</p>';
+    if(AUTO.name)h+='<p class="hint" style="margin:0 0 10px">Folder: <b>'+esc(AUTO.name)+'</b><br>Last saved: <b>'+(at?new Date(at).toLocaleString():'not yet')+'</b></p><div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="autonow">Back up now</button><button class="btn ghost sm" data-a="autopick">Change folder</button><button class="btn ghost sm" data-a="autooff">Turn off</button></div>';
+    else h+='<button class="btn sm" data-a="autopick">Choose backup folder</button>';
+    if(AUTO.msg)h+='<p class="hint" style="color:var(--pink)">'+esc(AUTO.msg)+'</p>';
+    h+='</div>';
+  }
+  var vs=S.vac||[];
+  h+='<div class="sec" style="margin-top:22px"><h2>Vacation mode</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Pause everything for a date range. Those days have no tasks and no reminders, and never break your streak.</p>';
+  vs.forEach(function(r,ix){h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(lf(r.a,{day:'numeric',month:'short'}))+' to '+esc(lf(r.b,{day:'numeric',month:'short',year:'numeric'}))+'</span><button class="btn ghost sm" data-a="vacrm" data-v="'+ix+'">Remove</button></div>';});
+  h+='<div class="fr"><input type="date" id="vs" value="'+today()+'"><input type="date" id="ve" value="'+shift(today(),6)+'"></div><button class="btn full" data-a="vacadd">Pause these days</button>'+(vmsg?'<p class="hint" style="color:var(--pink)">'+esc(vmsg)+'</p>':'')+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Help</h2></div><div class="panel"><button class="btn ghost sm" data-a="tourplay">Replay the quick tour</button></div>';
+  return h;
+}
+function csvEsc(x){x=String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;}
+function buildCsv(){
+  var rows=[['date','task','category','kind','goal','progress','unit','done','skipped','broke_rule']],t0=today(),d;
+  for(d=firstDate();d<=t0;d=shift(d,1)){
+    if(inVac(d))continue;
+    S.tasks.forEach(function(t){
+      if(!active(t,d))return;
+      if(t.type==='daily'&&sched(t)==='days'&&(t.days||[]).indexOf(dow(d))<0&&!val(d,t.id))return;
+      rows.push([d,t.name,t.cat,isQuit(t)?'quit':(isWT(t)?'weekly total':'build'),isWT(t)?wkT(t):tgt(t),val(d,t.id),t.timer?'min':(t.unit||''),isDone(d,t)?'yes':'no',isSkipped(d,t)?'yes':'no',isBroke(d,t)?'yes':'no']);
+    });
+  }
+  return rows.map(function(r){return r.map(csvEsc).join(',');}).join('\n');
+}
+function doAuto(){
+  if(!NAT||!key||!AUTO.name||typeof NAT.autoBackup!=='function')return;
+  backupPayload().then(function(text){nat('autoBackup',[text]);}).catch(function(){});
+}
+var TOURS=[['Welcome','Habbit Strick keeps your habits private and encrypted on this phone. Here is a quick tour.'],['Check things off','Swipe a task right to finish it, left for Pin, Skip, Edit and Delete. Press and hold a task to reorder.'],['Build or quit','Add a habit to build, or one to quit. For quit habits, tap Followed or Broke it each day.'],['Move around','Slide the date bar to change day. Swipe the page left or right to switch between Today, Insights and Tasks.'],['Stay safe','In the Tasks tab, turn on Automatic backup and send a test reminder so you never lose data or miss one.']];
+function showTour(){tourI=0;drawTour();}
+function drawTour(){
+  var el=document.getElementById('tour');
+  if(tourI<0){if(el&&el.parentNode)el.parentNode.removeChild(el);return;}
+  if(!el){el=document.createElement('div');el.id='tour';document.body.appendChild(el);}
+  var s=TOURS[tourI],dots='',i,last=tourI===TOURS.length-1;
+  for(i=0;i<TOURS.length;i++)dots+='<i'+(i<=tourI?' class="on"':'')+'></i>';
+  el.innerHTML='<div class="tcard"><div class="td">'+dots+'</div><h3>'+s[0]+'</h3><p>'+s[1]+'</p><div class="fr" style="margin-top:0"><button class="btn" style="flex:1" data-a="tournext">'+(last?'Got it':'Next')+'</button>'+(last?'':'<button class="btn ghost" data-a="tourskip">Skip</button>')+'</div></div>';
+}
+function endTour(){tourI=-1;drawTour();if(!S.meta.tour){S.meta.tour=1;save();}}
 function tasksSecurity(){
   var h='',bioA=NAT&&nat('bioAvailable')===true,bo=bioOn();
   h+='<div class="sec" style="margin-top:22px"><h2>Security</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Your data is encrypted with your password on this device. The app locks itself after you leave it for a minute.</p><button class="btn ghost sm" data-a="lock">Lock now</button>';
@@ -932,7 +1130,7 @@ function tasksSecurity(){
   }
   h+='<div class="fl">Change password</div><input type="password" id="cp" placeholder="Current password" autocomplete="current-password"><input type="password" id="np" placeholder="New password" autocomplete="new-password" style="margin-top:10px"><input type="password" id="np2" placeholder="Confirm new password" autocomplete="new-password" style="margin-top:10px"><button class="btn full" data-a="chpw">Change password</button>'+(smsg?'<p class="hint" style="color:var(--pink)">'+esc(smsg)+'</p>':'')+'</div>';
   var last=S.meta.lastBackup?lf(ds(new Date(S.meta.lastBackup)),{day:'numeric',month:'short',year:'numeric'}):'never';
-  h+='<div class="sec" style="margin-top:22px"><h2>Backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Last backup: <b>'+last+'</b>. The backup file is encrypted with your password. Keep a copy somewhere safe, like Google Drive.</p><div class="fr" style="margin:0 0 12px;flex-wrap:wrap"><button class="btn sm" data-a="bksave">Save backup file</button>'+(NAT?'<button class="btn ghost sm" data-a="bkload">Load backup file</button>':'')+'<button class="btn ghost sm" data-a="exp">Copy as text</button><button class="btn ghost sm" data-a="imp">Import from box</button></div><textarea id="bk" placeholder="Paste backup text here to import. Copy as text is not encrypted, keep it private.">'+esc(backupText)+'</textarea><input type="password" id="bkpw" placeholder="Password used for that backup (only if different)" style="margin-top:10px">'+(msg?'<p class="hint" style="color:var(--pink)">'+esc(msg)+'</p>':'')+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Last backup: <b>'+last+'</b>. The backup file is encrypted with your password. Keep a copy somewhere safe, like Google Drive.</p><div class="fr" style="margin:0 0 12px;flex-wrap:wrap"><button class="btn sm" data-a="bksave">Save backup file</button>'+(NAT?'<button class="btn ghost sm" data-a="bkload">Load backup file</button>':'')+'<button class="btn ghost sm" data-a="csv">Export CSV</button><button class="btn ghost sm" data-a="exp">Copy as text</button><button class="btn ghost sm" data-a="imp">Import from box</button></div><textarea id="bk" placeholder="Paste backup text here to import. Copy as text is not encrypted, keep it private.">'+esc(backupText)+'</textarea><input type="password" id="bkpw" placeholder="Password used for that backup (only if different)" style="margin-top:10px">'+(msg?'<p class="hint" style="color:var(--pink)">'+esc(msg)+'</p>':'')+'</div>';
   return h;
 }
 
@@ -1003,9 +1201,11 @@ function setQuit(id,mode){
     else{setVal(cur,id,0);delete b[id];}
   });
   hap(mode==='broke'?30:20);save();render();
+  if(mode==='follow')celebrate(id);
 }
 function setDoneState(id,dn){
   var t=byId(id);if(!t)return;
+  if(isWT(t)){toast('Tap plus to add progress');render();return;}
   withUndo(dn?'Done: '+t.name:'Marked not done',function(){
     setVal(cur,id,dn?tgt(t):0);
     if(S.broke[cur])delete S.broke[cur][id];
@@ -1013,6 +1213,7 @@ function setDoneState(id,dn){
   });
   hap(dn?20:8);
   save();render();
+  if(dn)celebrate(id);
 }
 function moveTask(id,targetId,after){
   var from=-1,i;
@@ -1078,12 +1279,33 @@ document.addEventListener('click',function(e){
   else if(a==='calopen'){calM=cur.slice(0,8)+'01';prevView='today';view='cal';window.scrollTo(0,0);}
   else if(a==='cal'){var cm=parse(calM||(cur.slice(0,8)+'01'));calM=ds(new Date(cm.getFullYear(),cm.getMonth()+(+v),1));}
   else if(a==='calpick'){cur=v;view='today';window.scrollTo(0,0);}
-  else if(a==='kind'){if(F){F.kind=v;if(v==='quit'){F.target=1;F.timer=false;F.unit='';F.step=1;}}}
+  else if(a==='kind'){if(F){F.kind=v;if(v==='quit'){F.target=1;F.timer=false;F.unit='';F.step=1;if(F.sched==='wtotal')F.sched='daily';}}}
   else if(a==='tpl'){var tp=TPL[+v];if(tp&&F){F.name=tp.n;F.cat=tp.cat;F.target=tp.t;F.unit=tp.tm?'min':tp.u;F.timer=!!tp.tm;F.step=tp.s||1;F.kind=tp.q?'quit':'do';}}
   else if(a==='skip'){var skt=byId(id);if(skt){withUndo('Skipped: '+skt.name,function(){var kk=S.skip[cur]||(S.skip[cur]={});kk[id]=1;});openId=null;hap(10);save();}}
   else if(a==='unskip'){if(S.skip[cur])delete S.skip[cur][id];save();}
   else if(a==='wrx'){S.meta.wrSeen=v;save();}
   else if(a==='pref'){var pk=b.getAttribute('data-k');S.meta[pk]=(pk==='haptic')?+v:v;applyPrefs();save();hap(8);}
+  else if(a==='col'){if(F)F.color=v||'';}
+  else if(a==='csv'){
+    var ct=buildCsv();
+    if(NAT&&typeof NAT.saveText==='function'){nat('saveText',['habbit-strick-'+today()+'.csv','text/csv',ct]);msg='';return;}
+    backupText=ct;msg='The CSV is in the box below. Copy it into a .csv file or paste it into Google Sheets. Saving a file works in the Android app.';
+  }
+  else if(a==='remtest'){nat('testReminder');toast('Test reminder sent. Check your notifications.');return;}
+  else if(a==='exactset'){nat('exactSettings');return;}
+  else if(a==='batset'){nat('batterySettings');return;}
+  else if(a==='autopick'){nat('pickBackupFolder');return;}
+  else if(a==='autooff'){nat('clearBackupFolder');AUTO.name='';AUTO.msg='Automatic backup is off.';}
+  else if(a==='autonow'){AUTO.msg='Backing up...';doAuto();}
+  else if(a==='vacadd'){
+    var va=document.getElementById('vs'),vb=document.getElementById('ve'),x1=va?va.value:'',x2=vb?vb.value:'';
+    if(!x1||!x2||x2<x1){vmsg='Pick a start date and an end date that is not earlier.';}
+    else{vmsg='';S.vac=(S.vac||[]).concat([{a:x1,b:x2}]).sort(function(p,r){return p.a<r.a?-1:1;});save();toast('Vacation mode set');}
+  }
+  else if(a==='vacrm'){(S.vac||[]).splice(+v,1);save();}
+  else if(a==='tournext'){tourI++;if(tourI>=TOURS.length)endTour();else drawTour();return;}
+  else if(a==='tourskip'){endTour();return;}
+  else if(a==='tourplay'){showTour();return;}
   else if(a==='updgo'){UPD.busy=true;UPD.pct=0;UPD.msg='';nat('downloadUpdate');}
   else if(a==='updlater'){UPD.later=true;}
   else if(a==='updchk'){checkUpd(true);return;}
@@ -1099,7 +1321,7 @@ document.addEventListener('click',function(e){
   else if(a==='broke'){var bt=byId(id);if(bt)setQuit(id,isBroke(cur,bt)?'none':'broke');return;}
   else if(a==='tog'){var tt=byId(id);if(tt){setDoneState(id,!isDone(cur,tt));}return;}
   else if(a==='inc'||a==='dec'){
-    var it=byId(id);if(it){var stp=it.step>0?+it.step:1,nv=val(cur,id)+(a==='inc'?stp:-stp);nv=Math.min(nv,tgt(it));setVal(cur,id,nv);save();}
+    var it=byId(id);if(it){var stp=it.step>0?+it.step:1,nv=val(cur,id)+(a==='inc'?stp:-stp);if(!isWT(it))nv=Math.min(nv,tgt(it));setVal(cur,id,nv);save();if(nv>=tgt(it)-1e-9||isWT(it))setTimeout(function(){celebrate(id);},0);}
   }
   else if(a==='timer'){if(S.timer&&S.timer.id===id)stopTimer(true);else startTimer(id);save();}
   else if(a==='pin'){var pt=byId(id);if(pt){if(pt.pin)delete pt.pin;else pt.pin=1;save();}openId=null;}
@@ -1303,6 +1525,19 @@ window.nativeBioEnabled=function(ok,m){
   smsg=ok?'Fingerprint unlock is on.':(m||'Could not turn on fingerprint unlock.');
   if(key)render();
 };
+window.nativeFileSaved=function(ok){toast(ok?'CSV saved':'Not saved');};
+window.nativeAutoFolder=function(label){
+  AUTO.name=label||'';
+  if(label){AUTO.msg='Folder set.';doAuto();}
+  var ae=document.activeElement;
+  if(key&&view==='tasks'&&!(ae&&ae.tagName==='INPUT'))render();
+};
+window.nativeAutoResult=function(ok,ms){
+  if(ok){try{localStorage.setItem('habbitstrick.autoAt',String(ms));}catch(e){}AUTO.msg='';}
+  else AUTO.msg='Could not write to that folder. Choose it again.';
+  var ae=document.activeElement;
+  if(key&&view==='tasks'&&!(ae&&ae.tagName==='INPUT'))render();
+};
 window.nativeBackupSaved=function(ok){
   if(!key){lockErr=ok?'Backup file saved.':'Backup was not saved.';lockUI();return;}
   if(ok){markBackup();msg='Backup file saved.';}else msg='Backup was not saved.';
@@ -1338,6 +1573,7 @@ window.nativeBack=function(){
   return false;
 };
 boot();
+if(window.__HS_TEST)window.__hs=function(c){return eval(c);};
 })();
 </script>
 </body>

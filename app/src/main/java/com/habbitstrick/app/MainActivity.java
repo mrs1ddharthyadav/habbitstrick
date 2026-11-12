@@ -52,6 +52,9 @@ public class MainActivity extends AppCompatActivity {
     private String pendingBackup = "";
     private ActivityResultLauncher<String> createDoc;
     private ActivityResultLauncher<String[]> openDoc;
+    private ActivityResultLauncher<String> createCsv;
+    private ActivityResultLauncher<Uri> pickDir;
+    private String pendingCsv = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +79,39 @@ public class MainActivity extends AppCompatActivity {
                     pendingBackup = "";
                     js("window.nativeBackupSaved&&window.nativeBackupSaved(" + ok + ")");
                 });
+
+        createCsv = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("text/csv"), uri -> {
+                    if (uri == null) {
+                        js("window.nativeFileSaved&&window.nativeFileSaved(false)");
+                        return;
+                    }
+                    boolean ok = false;
+                    try (OutputStream os = getContentResolver().openOutputStream(uri, "wt")) {
+                        if (os != null) {
+                            os.write(pendingCsv.getBytes(StandardCharsets.UTF_8));
+                            ok = true;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    pendingCsv = "";
+                    js("window.nativeFileSaved&&window.nativeFileSaved(" + ok + ")");
+                });
+
+        pickDir = registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(), uri -> {
+            if (uri == null) {
+                js("window.nativeAutoFolder&&window.nativeAutoFolder('')");
+                return;
+            }
+            try {
+                getContentResolver().takePersistableUriPermission(uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                prefs().edit().putString("autoDir", uri.toString()).apply();
+                js("window.nativeAutoFolder&&window.nativeAutoFolder(" + JSONObject.quote(folderLabel(uri)) + ")");
+            } catch (Exception e) {
+                js("window.nativeAutoFolder&&window.nativeAutoFolder('')");
+            }
+        });
 
         openDoc = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri == null) return;
@@ -319,6 +355,59 @@ public class MainActivity extends AppCompatActivity {
         deleteKey();
     }
 
+    /* ---------- automatic backup folder ---------- */
+
+    private String folderLabel(Uri tree) {
+        try {
+            String id = android.provider.DocumentsContract.getTreeDocumentId(tree);
+            int i = id.indexOf(':');
+            String path = i >= 0 ? id.substring(i + 1) : id;
+            return path.isEmpty() ? "Selected folder" : path;
+        } catch (Exception e) {
+            return "Selected folder";
+        }
+    }
+
+    private void writeAutoBackup(String text) {
+        boolean ok = false;
+        try {
+            String s = prefs().getString("autoDir", "");
+            if (!s.isEmpty()) {
+                Uri tree = Uri.parse(s);
+                String docId = android.provider.DocumentsContract.getTreeDocumentId(tree);
+                Uri parent = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, docId);
+                String day = new java.text.SimpleDateFormat("EEE", java.util.Locale.US).format(new java.util.Date());
+                String name = "habbit-strick-backup-" + day + ".json";
+                Uri target = null;
+                Uri kids = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
+                try (android.database.Cursor cur = getContentResolver().query(kids,
+                        new String[]{android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                                android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME}, null, null, null)) {
+                    while (cur != null && cur.moveToNext()) {
+                        if (name.equals(cur.getString(1))) {
+                            target = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, cur.getString(0));
+                            break;
+                        }
+                    }
+                }
+                if (target == null) {
+                    target = android.provider.DocumentsContract.createDocument(getContentResolver(), parent,
+                            "application/json", name);
+                }
+                if (target != null) {
+                    try (OutputStream os = getContentResolver().openOutputStream(target, "wt")) {
+                        if (os != null) {
+                            os.write(text.getBytes(StandardCharsets.UTF_8));
+                            ok = true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        js("window.nativeAutoResult&&window.nativeAutoResult(" + ok + "," + System.currentTimeMillis() + ")");
+    }
+
     /* ---------- updater ---------- */
 
     private boolean downloading = false;
@@ -375,6 +464,92 @@ public class MainActivity extends AppCompatActivity {
     /* ---------- bridge for the web page ---------- */
 
     private class Bridge {
+
+        @JavascriptInterface
+        public void saveText(String name, String mime, String text) {
+            final String n = name;
+            final String t = text;
+            pendingCsv = t;
+            runOnUiThread(() -> createCsv.launch(n));
+        }
+
+        @JavascriptInterface
+        public void pickBackupFolder() {
+            runOnUiThread(() -> pickDir.launch(null));
+        }
+
+        @JavascriptInterface
+        public String autoFolderName() {
+            String s = prefs().getString("autoDir", "");
+            return s.isEmpty() ? "" : folderLabel(Uri.parse(s));
+        }
+
+        @JavascriptInterface
+        public void clearBackupFolder() {
+            String s = prefs().getString("autoDir", "");
+            if (!s.isEmpty()) {
+                try {
+                    getContentResolver().releasePersistableUriPermission(Uri.parse(s),
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                } catch (Exception ignored) {
+                }
+            }
+            prefs().edit().remove("autoDir").apply();
+        }
+
+        @JavascriptInterface
+        public void autoBackup(String text) {
+            final String t = text;
+            new Thread(() -> writeAutoBackup(t)).start();
+        }
+
+        @JavascriptInterface
+        public boolean exactOk() {
+            return Reminders.canExact(getApplicationContext());
+        }
+
+        @JavascriptInterface
+        public void exactSettings() {
+            runOnUiThread(() -> {
+                try {
+                    if (Build.VERSION.SDK_INT >= 31) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                Uri.parse("package:" + getPackageName())));
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean batteryOk() {
+            try {
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                return pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void batterySettings() {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+                } catch (Exception e) {
+                    try {
+                        startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + getPackageName())));
+                    } catch (Exception ignored) {
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void testReminder() {
+            Reminders.show(getApplicationContext(), "test", "this is how your reminders will look", false);
+        }
 
         @JavascriptInterface
         public void haptic(int ms) {

@@ -15,8 +15,14 @@ public class ReminderReceiver extends BroadcastReceiver {
             Reminders.snooze(context, id, intent.getIntExtra("nid", 0));
         } else if (Reminders.ACTION_ONCE.equals(action)) {
             Reminders.maybeNotify(context, id, false);
+        } else if (Reminders.ACTION_DONE.equals(action)) {
+            Reminders.markDone(context, id, intent.getIntExtra("nid", 0));
         } else if (Reminders.ACTION_REMIND.equals(action)) {
             Reminders.maybeNotify(context, id, true);
+            String time = intent.getStringExtra("time");
+            if (id != null && time != null && Reminders.stillScheduled(context, id, time)) {
+                Reminders.scheduleOne(context, null, id, time);
+            }
         }
     }
 }
