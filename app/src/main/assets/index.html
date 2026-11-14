@@ -230,6 +230,13 @@ body.light #toast{background:#141416;color:#fff}
 body.light #toast .tu{color:#ff8fa3}
 body.light .lockscr{background:var(--bg)}
 body.light #tour{background:rgba(0,0,0,.35)}
+.subs{margin-top:8px}
+.sub{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:14px;cursor:pointer}
+.sub i{width:19px;height:19px;border-radius:6px;border:1.5px solid rgba(128,128,128,.55);flex:none;display:grid;place-items:center}
+.sub i svg{width:11px;height:11px;color:#fff;display:none}
+.sub.on i{background:var(--accent);border-color:var(--accent)}
+.sub.on i svg{display:block}
+.sub.on span{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -249,7 +256,7 @@ body.light #tour{background:rgba(0,0,0,.35)}
 var OLD='dailytracker.v1',VKEY='habbitstrick.vault';
 var NAT=(typeof window.Android==='object'&&window.Android)?window.Android:null;
 function nat(m,a){try{if(NAT&&typeof NAT[m]==='function')return NAT[m].apply(NAT,a||[]);}catch(e){}return undefined;}
-function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],timer:null};}
+function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],subd:{},timer:null};}
 function norm(o){
   if(!o||typeof o!=='object')o={};
   if(!Array.isArray(o.tasks))o.tasks=[];
@@ -260,6 +267,7 @@ function norm(o){
   if(!o.skip||typeof o.skip!=='object')o.skip={};
   if(!o.broke||typeof o.broke!=='object')o.broke={};
   if(!Array.isArray(o.vac))o.vac=[];
+  if(!o.subd||typeof o.subd!=='object')o.subd={};
   if(o.timer===undefined)o.timer=null;
   return o;
 }
@@ -310,7 +318,9 @@ cur=today();
 
 /* ---------- task model ---------- */
 function byId(id){for(var i=0;i<S.tasks.length;i++)if(S.tasks[i].id===id)return S.tasks[i];return null;}
-function tgt(t){return t.target>0?+t.target:1;}
+function hasSubs(t){return !!(t.subs&&t.subs.length);}
+function tgt(t){if(hasSubs(t))return t.subs.length;return t.target>0?+t.target:1;}
+function subDone(date,t){var k=S.subd&&S.subd[date];return (k&&k[t.id])||[];}
 function sched(t){return t.sched||'daily';}
 function val(date,id){var l=S.log[date];var v=l&&l[id];return v?+v:0;}
 function isDone(date,t){if(isWT(t))return wkSum(t,date,true)>=wkT(t)-1e-9;return val(date,t.id)>=tgt(t)-1e-9;}
@@ -507,7 +517,7 @@ function syncNative(){
         rem.push({id:x.id,name:x.name,times:x.rem,days:(x.type==='daily'&&sched(x)==='days')?(x.days||[]):null,date:x.type==='once'?x.date:null,from:x.created||x.date,q:isQuit(x),vac:(S.vac&&S.vac.length)?S.vac:null});
       }
     });
-    var lst=sortPinned(dayList(t)).filter(function(x){return tgt(x)<=1&&!x.timer&&!isWeekly(x);});
+    var lst=sortPinned(dayList(t)).filter(function(x){return tgt(x)<=1&&!x.timer&&!isWeekly(x)&&!hasSubs(x);});
     var pend=lst.filter(function(x){return !isDone(t,x);}),dn2=lst.filter(function(x){return isDone(t,x);});
     var items=pend.concat(dn2).slice(0,4).map(function(x){return {id:x.id,name:x.name,done:isDone(t,x)};});
     nat('sync',[JSON.stringify({date:t,done:st.done,total:st.total,streak:w.cur,reminders:rem,doneIds:done,items:items})]);
@@ -590,10 +600,10 @@ function boot(){
 document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}else if(key){applyQueue();}});
 
 /* ---------- task form ---------- */
-function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',tod:'any',color:'',chal:0,wt:150};}
+function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',subs:[],tod:'any',color:'',chal:0,wt:150};}
 function draftFrom(t){
   var d=t.type==='once'?t.date:t.created;
-  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do',tod:t.tod||'any',color:t.color||'',chal:t.chal||0,wt:t.wt||150};
+  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do',subs:(t.subs||[]).map(function(x){return {id:x.id,n:x.n};}),tod:t.tod||'any',color:t.color||'',chal:t.chal||0,wt:t.wt||150};
 }
 function opts(list,sel){return list.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+c+'</option>';}).join('');}
 function formHtml(){
@@ -622,10 +632,13 @@ function formHtml(){
     }
   }
   if(f.kind!=='quit'&&!isw){
+  h+='<div class="fl">Steps (optional)</div>'+(f.subs.length?'<div class="chips">'+f.subs.map(function(x,i){return '<span class="chip">'+esc(x.n)+'<button data-a="subrm" data-v="'+i+'" aria-label="Remove step">x</button></span>';}).join('')+'</div>':'')+'<div class="fr"><input type="text" id="sn" maxlength="60" placeholder="e.g. Push ups, Squats"><button class="btn ghost sm" data-a="subadd">Add step</button></div><p class="hint">Split a task into steps. You tick each step, and the task is done when every step is done.</p>';
+  if(!f.subs.length){
   h+='<div class="fl">Daily goal</div><div class="fr" style="margin-top:0"><input type="number" inputmode="decimal" min="0.1" step="any" data-f="target" value="'+esc(f.target)+'"><input type="text" data-f="unit" placeholder="Unit (glasses, pages)" maxlength="16" value="'+esc(f.timer?'min':f.unit)+'"'+(f.timer?' disabled':'')+'></div>';
   h+='<label class="chkrow"><input type="checkbox" data-f="timer"'+(f.timer?' checked':'')+'><span>Use a timer (goal is in minutes)</span></label>';
   if(!f.timer&&Number(f.target)>1){
     h+='<div class="fl">Each tap on plus adds</div><input type="number" inputmode="decimal" min="0.1" step="any" data-f="step" value="'+esc(f.step)+'">';
+  }
   }
   }
   h+='<div class="fl">Time of day</div><select data-f="tod"><option value="any"'+(f.tod==='any'?' selected':'')+'>Anytime</option><option value="morning"'+(f.tod==='morning'?' selected':'')+'>Morning</option><option value="afternoon"'+(f.tod==='afternoon'?' selected':'')+'>Afternoon</option><option value="evening"'+(f.tod==='evening'?' selected':'')+'>Evening</option></select>';
@@ -646,6 +659,8 @@ function formSave(){
   var quit=f.kind==='quit';
   var tg=quit?1:Number(f.target);if(!(tg>0))tg=1;
   var st=Number(f.step);if(!(st>0))st=1;
+  var hs=!quit&&f.sched!=='wtotal'&&f.subs.length>0;
+  if(hs){tg=f.subs.length;st=1;f.timer=false;f.unit='';}
   var wk=Math.max(1,Math.min(7,Math.round(Number(f.wk)||3)));
   var date=f.date||today();
   var sc=f.type==='once'?'daily':f.sched;
@@ -653,7 +668,7 @@ function formSave(){
   if(f.type==='daily'&&sc==='wtotal'&&quit)sc='daily';
   if(iswt&&!(Number(f.wt)>0)){ferr='Set a weekly total above 0.';render();return;}
   if(f.type==='daily'&&sc==='days'&&!f.days.length){ferr='Pick at least one weekday.';render();return;}
-  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:iswt?1:tg,wt:iswt?Number(f.wt):0,tod:f.tod||'any',color:f.color||'',chal:(f.type==='daily'?(+f.chal||0):0),unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do'};
+  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:iswt?1:tg,wt:iswt?Number(f.wt):0,subs:(quit||iswt)?[]:f.subs.map(function(x){return {id:x.id,n:x.n};}),tod:f.tod||'any',color:f.color||'',chal:(f.type==='daily'?(+f.chal||0):0),unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do'};
   if(f.mode==='add'){
     var t={id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),created:date,date:date};
     for(var k in fields)t[k]=fields[k];
@@ -700,6 +715,7 @@ function rowHtml(t){
     else if(isWT(t))sub.push('Weekly total');else if(isWeekly(t))sub.push(weekCount(t,cur)+'/'+(wkT(t))+' this week');
   }
   if(t.rem&&t.rem.length)sub.push('Remind '+esc(t.rem.join(', ')));
+  if(hasSubs(t))sub.push(t.subs.length+' steps');
   if(t.chal)sub.push('Challenge '+Math.min(t.chal,chalDone(t))+'/'+t.chal);
   var q=isQuit(t),brk=q&&isBroke(cur,t);
   if(q)sub.splice(1,0,'Quit habit');
@@ -710,14 +726,15 @@ function rowHtml(t){
   if(q){
     h+='<div class="foot" style="'+(brk?'color:var(--pink)':'')+'">'+(brk?'You broke the rule today':(done?'You followed the rule today':'Did you keep the rule today?'))+'</div><div class="foot">'+sub.join(' · ')+'</div>';
   }else if(multi){
-    h+='<div class="bar"><i data-bar="'+t.id+'" style="width:'+Math.min(100,disp/tg*100)+'%"></i></div><div class="foot" data-live="'+(run?t.id:'')+'">'+fmtNum(disp)+' / '+fmtNum(tg)+(t.unit?' '+esc(t.unit):'')+(wtt?' this week':'')+(run?', '+mmss(elapsedMin()):'')+'</div><div class="foot">'+sub.join(' · ')+'</div>';
+    h+='<div class="bar"><i data-bar="'+t.id+'" style="width:'+Math.min(100,disp/tg*100)+'%"></i></div><div class="foot" data-live="'+(run?t.id:'')+'">'+fmtNum(disp)+' / '+fmtNum(tg)+(hasSubs(t)?' steps':(t.unit?' '+esc(t.unit):''))+(wtt?' this week':'')+(run?', '+mmss(elapsedMin()):'')+'</div><div class="foot">'+sub.join(' · ')+'</div>';
   }else{
     h+='<div class="foot">'+sub.join(' · ')+'</div>';
   }
+  if(hasSubs(t)){var sdn=subDone(cur,t);h+='<div class="subs">'+t.subs.map(function(x){var on=sdn.indexOf(x.id)>=0;return '<div class="sub'+(on?' on':'')+'" data-a="sub" data-id="'+t.id+'" data-v="'+x.id+'"><i>'+CHECK+'</i><span>'+esc(x.n)+'</span></div>';}).join('')+'</div>';}
   h+='</div>';
   if(q)h+='<div class="qb"><button class="f'+(done?' on':'')+'" data-a="follow" data-id="'+t.id+'">Followed</button><button class="b'+(brk?' on':'')+'" data-a="broke" data-id="'+t.id+'">Broke it</button></div>';
   else if(t.timer)h+='<div class="stp"><button class="mb'+(run?' run':'')+'" data-a="timer" data-id="'+t.id+'" aria-label="Timer">'+(run?STOP:PLAY)+'</button></div>';
-  else if(tg>1||wtt)h+='<div class="stp"><button class="mb" data-a="dec" data-id="'+t.id+'" aria-label="Less">-</button><button class="mb" data-a="inc" data-id="'+t.id+'" aria-label="More">+</button></div>';
+  else if((tg>1||wtt)&&!hasSubs(t))h+='<div class="stp"><button class="mb" data-a="dec" data-id="'+t.id+'" aria-label="Less">-</button><button class="mb" data-a="inc" data-id="'+t.id+'" aria-label="More">+</button></div>';
   h+='</div></div>';
   return h;
 }
@@ -1003,7 +1020,8 @@ function renderDetail(){
   else if(isWT(t))info.push(fmtNum(wkT(t))+' '+(t.timer?'min':(t.unit||'units'))+' a week');else if(isWeekly(t))info.push((wkT(t))+' times a week');
   else info.push('Every day');
   if(t.kind==='quit'){var bn=0;for(var bd in S.broke){if(S.broke[bd][t.id])bn++;}info.splice(1,0,'Quit habit, broken '+bn+(bn===1?' time':' times'));}
-  if(tg>1||t.timer)info.push('Goal '+fmtNum(tg)+' '+(t.timer?'min':(t.unit||'')));
+  if(hasSubs(t))info.push(t.subs.length+' steps: '+esc(t.subs.map(function(x){return x.n;}).join(', ')));
+  else if(tg>1||t.timer)info.push('Goal '+fmtNum(tg)+' '+(t.timer?'min':(t.unit||'')));
   if(t.rem&&t.rem.length)info.push('Remind '+esc(t.rem.join(', ')));
   h+='<p class="hint" style="margin:-8px 0 16px">'+info.join(' · ')+'</p>';
   var wk=isWeekly(t);
@@ -1187,6 +1205,7 @@ function render(){
   for(var i=0;i<tb.length;i++)tb[i].classList.toggle('on',tb[i].getAttribute('data-v')===tv);
   if(slideDir){main.classList.remove('sl','sr');void main.offsetWidth;main.classList.add(slideDir==='l'?'sl':'sr');slideDir=null;}
   if(F&&F.focus){F.focus=false;var el=document.getElementById('fname');if(el)el.focus();}
+  if(F&&F.focusSub){F.focusSub=false;var el2=document.getElementById('sn');if(el2)el2.focus();}
   if(view==='today'&&key)maybeBadges();
 }
 function softMain(){/* reserved */}
@@ -1208,6 +1227,7 @@ function setDoneState(id,dn){
   if(isWT(t)){toast('Tap plus to add progress');render();return;}
   withUndo(dn?'Done: '+t.name:'Marked not done',function(){
     setVal(cur,id,dn?tgt(t):0);
+    if(hasSubs(t)){var sd0=S.subd[cur]||(S.subd[cur]={});if(dn)sd0[id]=t.subs.map(function(x){return x.id;});else delete sd0[id];}
     if(S.broke[cur])delete S.broke[cur][id];
     if(S.timer&&S.timer.id===id&&S.timer.date===cur&&dn){S.timer=null;}
   });
@@ -1285,6 +1305,21 @@ document.addEventListener('click',function(e){
   else if(a==='unskip'){if(S.skip[cur])delete S.skip[cur][id];save();}
   else if(a==='wrx'){S.meta.wrSeen=v;save();}
   else if(a==='pref'){var pk=b.getAttribute('data-k');S.meta[pk]=(pk==='haptic')?+v:v;applyPrefs();save();hap(8);}
+  else if(a==='sub'){
+    var stk=byId(id);
+    if(stk&&hasSubs(stk)){
+      var ids=stk.subs.map(function(x){return x.id;}),sdd=S.subd[cur]||(S.subd[cur]={}),arr=(sdd[id]||[]).filter(function(x){return ids.indexOf(x)>=0;}),ix2=arr.indexOf(v);
+      if(ix2>=0)arr.splice(ix2,1);else arr.push(v);
+      if(arr.length)sdd[id]=arr;else delete sdd[id];
+      setVal(cur,id,arr.length);hap(10);save();
+      setTimeout(function(){celebrate(id);},0);
+    }
+  }
+  else if(a==='subadd'){
+    var sne=document.getElementById('sn'),sv=sne?sne.value.trim():'';
+    if(sv&&F&&F.subs.length<15){F.subs.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),n:sv.slice(0,60)});F.focusSub=true;}
+  }
+  else if(a==='subrm'){if(F)F.subs.splice(+v,1);}
   else if(a==='col'){if(F)F.color=v||'';}
   else if(a==='csv'){
     var ct=buildCsv();
@@ -1369,6 +1404,7 @@ document.addEventListener('keydown',function(e){
   var el=e.target;
   if(el.classList&&el.classList.contains('lkin')){var gb=document.querySelector('[data-a="lkgo"]');if(gb)gb.click();}
   else if(el.id==='fname'&&F){formSave();}
+  else if(el.id==='sn'&&F){var sb=document.querySelector('[data-a="subadd"]');if(sb)sb.click();}
 });
 document.addEventListener('input',function(e){
   if(e.target&&e.target.id==='nn'){
