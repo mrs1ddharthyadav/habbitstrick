@@ -255,6 +255,7 @@ body.light #tour{background:rgba(0,0,0,.35)}
 (function(){
 var OLD='dailytracker.v1',VKEY='habbitstrick.vault';
 var NAT=(typeof window.Android==='object'&&window.Android)?window.Android:null;
+var DESK=(typeof window.Desktop==='object'&&window.Desktop)?window.Desktop:null;
 function nat(m,a){try{if(NAT&&typeof NAT[m]==='function')return NAT[m].apply(NAT,a||[]);}catch(e){}return undefined;}
 function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],subd:{},timer:null};}
 function norm(o){
@@ -278,7 +279,7 @@ var CATS=['General','Work','Study','Health','Home','Personal'];
 var CATCOL={General:'#8d8d94',Work:'#7fb5ff',Study:'#ffc857',Health:'#5ee0a0',Home:'#ff9f6b',Personal:'#ff8fa3'};
 var TPL=[{n:'Drink water',cat:'Health',t:8,u:'glasses',s:1,tm:false},{n:'Workout',cat:'Health',t:45,u:'min',tm:true},{n:'Read',cat:'Study',t:20,u:'min',tm:true},{n:'Meditate',cat:'Personal',t:10,u:'min',tm:true},{n:'Walk',cat:'Health',t:30,u:'min',tm:true},{n:'Study session',cat:'Study',t:60,u:'min',tm:true},{n:'Write journal',cat:'Personal',t:1,u:'',tm:false},{n:'Sleep before 11',cat:'Health',t:1,u:'',tm:false},{n:'Clean room',cat:'Home',t:1,u:'',tm:false},{n:'No smoking',cat:'Health',t:1,u:'',tm:false,q:true},{n:'No junk food',cat:'Health',t:1,u:'',tm:false,q:true},{n:'No social media scrolling',cat:'Personal',t:1,u:'',tm:false,q:true},{n:'No phone after 11 pm',cat:'Personal',t:1,u:'',tm:false,q:true}];
 var ACTW=300,CELLW=58;
-var AUTO={name:'',msg:''},autoT=null,vmsg='',tourI=-1;
+var AUTO={name:'',msg:''},autoT=null,vmsg='',tourI=-1,lockPrev='';
 var SWC=['#ff4f6d','#ff9f6b','#ffc857','#5ee0a0','#4fd1c5','#7fb5ff','#c4c4cc'];
 var UPD={chk:false,has:false,name:'',code:0,notes:'',busy:false,pct:0,msg:'',cur:'',later:false,checked:false};
 var TQ='',TC='All',calM=null,undoSnap=null,keepStrip=null,stripStart=null,stripCount=0,liveDate=null,stripT=null;
@@ -299,7 +300,7 @@ function unb(s){var r=atob(s),a=new Uint8Array(r.length);for(var i=0;i<r.length;
 function derive(pw,s){return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']).then(function(m){return crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);});}
 function enc(text){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(text)).then(function(ct){return {s:b64(salt),i:b64(iv),d:b64(ct)};});}
 function persist(){return enc(JSON.stringify(S)).then(function(v){localStorage.setItem(VKEY,JSON.stringify(v));});}
-function save(){if(!key)return;W=null;q=q.then(persist).catch(function(){});syncNative();if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,20000);}}
+function save(){if(!key)return;S.meta.mt=Date.now();syncSoon();W=null;q=q.then(persist).catch(function(){});syncNative();if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,20000);}}
 function decryptVault(v,k){return crypto.subtle.decrypt({name:'AES-GCM',iv:unb(v.i)},k,unb(v.d)).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));});}
 function unlockWith(v,pw){var s=unb(v.s);return derive(pw,s).then(function(k){return decryptVault(v,k).then(function(o){S=norm(o);key=k;salt=s;});});}
 
@@ -508,7 +509,7 @@ function tick(){
 
 /* ---------- native sync ---------- */
 function syncNative(){
-  if(!NAT||!key)return;
+  if((!NAT&&!DESK)||!key)return;
   try{
     var t=today(),st=dayStat(t),w=getW(),rem=[],done=[];
     S.tasks.forEach(function(x){
@@ -520,15 +521,18 @@ function syncNative(){
     var lst=sortPinned(dayList(t)).filter(function(x){return tgt(x)<=1&&!x.timer&&!isWeekly(x)&&!hasSubs(x);});
     var pend=lst.filter(function(x){return !isDone(t,x);}),dn2=lst.filter(function(x){return isDone(t,x);});
     var items=pend.concat(dn2).slice(0,4).map(function(x){return {id:x.id,name:x.name,done:isDone(t,x)};});
-    nat('sync',[JSON.stringify({date:t,done:st.done,total:st.total,streak:w.cur,reminders:rem,doneIds:done,items:items})]);
+    var pj=JSON.stringify({date:t,done:st.done,total:st.total,streak:w.cur,reminders:rem,doneIds:done,items:items});
+    if(NAT)nat('sync',[pj]);
+    if(DESK&&DESK.sync)DESK.sync(pj);
   }catch(e){}
 }
 
 /* ---------- lock screen ---------- */
 function bioOn(){return NAT&&nat('bioEnabled')===true;}
 function lockUI(){
+  if(lockMode==='acct'){lockAcctUI();return;}
   var el=document.getElementById('lock'),setup=lockMode==='setup',bio=!setup&&bioOn();
-  el.innerHTML='<div class="lk"><div class="brand">Habbit Strick</div><h1>'+(setup?'Create password':'Welcome back')+'</h1><div class="sub">'+(setup?'This password locks the app and encrypts your data on this device. If you forget it, your data cannot be recovered.':'Enter your password to open.')+'</div><div class="panel" style="margin-top:22px"><input type="password" class="lkin" id="lp" placeholder="Password" autocomplete="'+(setup?'new-password':'current-password')+'">'+(setup?'<input type="password" class="lkin" id="lp2" placeholder="Confirm password" autocomplete="new-password" style="margin-top:10px">':'')+(lockErr?'<p class="hint" style="color:var(--pink)">'+esc(lockErr)+'</p>':'')+'<button class="btn full" data-a="lkgo"'+(busy?' disabled':'')+'>'+(busy?'Please wait':(setup?'Create and open':'Unlock'))+'</button>'+(bio?'<button class="btn ghost full" data-a="bio">Use fingerprint</button>':'')+'</div>'+(setup?'':'<div class="fr" style="justify-content:center;flex-wrap:wrap">'+(NAT?'<button class="btn ghost sm" data-a="lkbk">Back up data now</button>':'')+'<button class="btn ghost sm" data-a="lkreset">'+(resetArm?'Tap again to erase everything':'Forgot password?')+'</button></div>')+'</div>';
+  el.innerHTML='<div class="lk"><div class="brand">Habbit Strick</div><h1>'+(setup?'Create password':'Welcome back')+'</h1><div class="sub">'+(setup?'This password locks the app and encrypts your data on this device. If you forget it, your data cannot be recovered.':'Enter your password to open.')+'</div><div class="panel" style="margin-top:22px"><input type="password" class="lkin" id="lp" placeholder="Password" autocomplete="'+(setup?'new-password':'current-password')+'">'+(setup?'<input type="password" class="lkin" id="lp2" placeholder="Confirm password" autocomplete="new-password" style="margin-top:10px">':'')+(lockErr?'<p class="hint" style="color:var(--pink)">'+esc(lockErr)+'</p>':'')+'<button class="btn full" data-a="lkgo"'+(busy?' disabled':'')+'>'+(busy?'Please wait':(setup?'Create and open':'Unlock'))+'</button>'+(bio?'<button class="btn ghost full" data-a="bio">Use fingerprint</button>':'')+'</div>'+(setup?(fbOn()?'<div class="fr" style="justify-content:center"><button class="btn ghost sm" data-a="lkacct">I already have an account</button></div>':''):'<div class="fr" style="justify-content:center;flex-wrap:wrap">'+(fbOn()?'<button class="btn ghost sm" data-a="lkacct">Sign in to account</button>':'')+(NAT?'<button class="btn ghost sm" data-a="lkbk">Back up data now</button>':'')+'<button class="btn ghost sm" data-a="lkreset">'+(resetArm?'Tap again to erase everything':'Forgot password?')+'</button></div>')+'</div>';
   document.body.classList.add('locked');el.hidden=false;
   if(bio&&!bioTried&&!busy){bioTried=true;setTimeout(function(){nat('bioUnlock');},300);}
   else setTimeout(function(){var f=document.getElementById('lp');if(f&&!busy&&!bio)f.focus();},0);
@@ -539,6 +543,7 @@ function openApp(){
   applyPrefs();checkTimer();
   clearInterval(tickId);tickId=setInterval(tick,1000);
   applyQueue();render();syncNative();
+  syncStart();
   AUTO.name=String(nat('autoFolderName')||'');
   if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,6000);}
   if(!S.meta.tour&&tourI<0)setTimeout(function(){if(key&&!S.meta.tour&&tourI<0)showTour();},600);
@@ -573,7 +578,7 @@ function lockNow(){
   q=q.then(function(){
     clearInterval(tickId);
     key=null;salt=null;S=blank();W=null;F=null;detailId=null;openId=null;delId=null;backupText='';msg='';smsg='';
-    lockMode='unlock';lockErr='';resetArm=false;bioTried=false;
+    lockMode='unlock';lockErr='';resetArm=false;bioTried=false;SYNC.pending=null;SYNC.idTok='';
     document.getElementById('main').innerHTML='';lockUI();
   });
 }
@@ -588,6 +593,7 @@ function chpw(){
     return derive(np,ns).then(function(k2){key=k2;salt=ns;return persist();});
   }).then(function(){
     smsg='Password changed.';
+    if(syncOn()){authPw(SYNC.email,np).then(fbSetPw).then(function(){return syncPush();}).then(function(){smsg+=' Your account password was updated too. On your other devices, sign in again.';render();}).catch(function(e){smsg+=' The online account could not be updated: '+syncErr(e);render();});}
     if(bioOn()){nat('bioDisable');smsg+=' Fingerprint unlock was turned off. Turn it on again to use the new password.';}
     render();
   }).catch(function(){smsg='Current password is wrong.';render();});
@@ -595,9 +601,9 @@ function chpw(){
 function boot(){
   if(!window.crypto||!crypto.subtle){var el=document.getElementById('lock');el.hidden=false;document.body.classList.add('locked');el.innerHTML='<div class="lk"><h1>Not supported</h1><div class="sub">This browser cannot encrypt data, so the app will not open. Try a recent Chrome, Safari or Firefox.</div></div>';return;}
   var v=null;try{v=localStorage.getItem(VKEY);}catch(e){}
-  lockMode=v?'unlock':'setup';lockUI();
+  lockMode=v?'unlock':'setup';syncLoad();lockUI();
 }
-document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}else if(key){applyQueue();}});
+document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}else if(key){applyQueue();syncNow(false);}});
 
 /* ---------- task form ---------- */
 function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',subs:[],tod:'any',color:'',chal:0,wt:150};}
@@ -647,7 +653,7 @@ function formHtml(){
   h+='<div class="fl">Reminders</div>';
   if(f.rem.length){h+='<div class="chips">'+f.rem.map(function(r,i){return '<span class="chip">'+esc(r)+'<button data-a="remrm" data-v="'+i+'" aria-label="Remove reminder">x</button></span>';}).join('')+'</div>';}
   if(f.rem.length<4)h+='<div class="fr"><input type="time" id="rt" value="09:00"><button class="btn ghost sm" data-a="remadd">Add reminder</button></div>';
-  if(!NAT)h+='<p class="hint">Phone notifications work in the Android app.</p>';
+  if(!NAT&&!DESK)h+='<p class="hint">Reminders work in the Android app and the Windows app.</p>';
   if(ferr)h+='<p class="hint" style="color:var(--pink)">'+esc(ferr)+'</p>';
   h+='<div class="fr"><button class="btn" style="flex:1" data-a="fsave">'+(f.mode==='add'?'Add task':'Save')+'</button><button class="btn ghost" data-a="fcancel">Cancel</button></div></div>';
   return h;
@@ -1057,6 +1063,7 @@ function renderTasks(){
   h+='<div style="margin-bottom:14px"><button class="btn full" style="margin-top:0" data-a="newtask">Add a new task</button></div>';
   h+='<div class="panel" style="margin-bottom:12px"><input type="text" id="tq" placeholder="Search tasks" value="'+esc(TQ)+'"><select id="tc" style="margin-top:10px"><option'+(TC==='All'?' selected':'')+'>All</option>'+opts(CATS,TC)+'</select></div><div id="tlist">'+taskListHtml()+'</div>';
   h+=extraPanels();
+  h+=acctPanel();
   h+=toolPanels();
   h+=tasksSecurity();
   return h;
@@ -1090,6 +1097,9 @@ function extraPanels(){
 }
 function toolPanels(){
   var h='',i;
+  if(DESK){
+    h+='<div class="sec" style="margin-top:22px"><h2>Windows app</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Version <b>'+esc(String(DESK.version||''))+'</b>. Reminders show as Windows notifications while the app runs in the tray. Close the window to keep it running, and use the tray icon to quit.</p><div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="deskupd">Check for updates</button><button class="btn ghost sm" data-a="desktest">Send test reminder</button><button class="btn ghost sm" data-a="deskstart">'+(DESK.startup?'Do not start with Windows':'Start with Windows')+'</button></div>'+(UPD.msg?'<p class="hint">'+esc(UPD.msg)+'</p>':'')+'</div>';
+  }
   if(NAT){
     var ex=nat('exactOk'),bt=nat('batteryOk');
     h+='<div class="sec" style="margin-top:22px"><h2>Reminder tools</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Reminders have a Done button, so you can tick a task straight from the notification.</p><button class="btn sm" data-a="remtest">Send test reminder</button>';
@@ -1148,7 +1158,7 @@ function tasksSecurity(){
   }
   h+='<div class="fl">Change password</div><input type="password" id="cp" placeholder="Current password" autocomplete="current-password"><input type="password" id="np" placeholder="New password" autocomplete="new-password" style="margin-top:10px"><input type="password" id="np2" placeholder="Confirm new password" autocomplete="new-password" style="margin-top:10px"><button class="btn full" data-a="chpw">Change password</button>'+(smsg?'<p class="hint" style="color:var(--pink)">'+esc(smsg)+'</p>':'')+'</div>';
   var last=S.meta.lastBackup?lf(ds(new Date(S.meta.lastBackup)),{day:'numeric',month:'short',year:'numeric'}):'never';
-  h+='<div class="sec" style="margin-top:22px"><h2>Backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Last backup: <b>'+last+'</b>. The backup file is encrypted with your password. Keep a copy somewhere safe, like Google Drive.</p><div class="fr" style="margin:0 0 12px;flex-wrap:wrap"><button class="btn sm" data-a="bksave">Save backup file</button>'+(NAT?'<button class="btn ghost sm" data-a="bkload">Load backup file</button>':'')+'<button class="btn ghost sm" data-a="csv">Export CSV</button><button class="btn ghost sm" data-a="exp">Copy as text</button><button class="btn ghost sm" data-a="imp">Import from box</button></div><textarea id="bk" placeholder="Paste backup text here to import. Copy as text is not encrypted, keep it private.">'+esc(backupText)+'</textarea><input type="password" id="bkpw" placeholder="Password used for that backup (only if different)" style="margin-top:10px">'+(msg?'<p class="hint" style="color:var(--pink)">'+esc(msg)+'</p>':'')+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Last backup: <b>'+last+'</b>. The backup file is encrypted with your password. Keep a copy somewhere safe, like Google Drive.</p><div class="fr" style="margin:0 0 12px;flex-wrap:wrap"><button class="btn sm" data-a="bksave">Save backup file</button>'+((NAT||DESK)?'<button class="btn ghost sm" data-a="bkload">Load backup file</button>':'')+'<button class="btn ghost sm" data-a="csv">Export CSV</button><button class="btn ghost sm" data-a="exp">Copy as text</button><button class="btn ghost sm" data-a="imp">Import from box</button></div><textarea id="bk" placeholder="Paste backup text here to import. Copy as text is not encrypted, keep it private.">'+esc(backupText)+'</textarea><input type="password" id="bkpw" placeholder="Password used for that backup (only if different)" style="margin-top:10px">'+(msg?'<p class="hint" style="color:var(--pink)">'+esc(msg)+'</p>':'')+'</div>';
   return h;
 }
 
@@ -1244,14 +1254,169 @@ function moveTask(id,targetId,after){
   if(to<0){S.tasks.push(item);return;}
   S.tasks.splice(after?to+1:to,0,item);
 }
+/* ---------- account sync (Firebase REST, end to end encrypted) ---------- */
+var FBCFG={apiKey:'',projectId:''};
+var SYNC={email:'',uid:'',refresh:'',idTok:'',exp:0,busy:false,msg:'',err:'',last:0,pending:null,t:null,poll:null};
+function fbCfg(){var c=FBCFG;try{var o=JSON.parse(localStorage.getItem('habbitstrick.fbcfg')||'null');if(o&&o.apiKey&&o.projectId)c=o;}catch(e){}return c;}
+function fbOn(){var c=fbCfg();return !!(c.apiKey&&c.projectId);}
+function lget(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lset(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+function syncLoad(){try{var o=JSON.parse(lget('habbitstrick.sync')||'null');if(o&&o.refresh){SYNC.email=o.email;SYNC.uid=o.uid;SYNC.refresh=o.refresh;}}catch(e){}SYNC.last=+lget('habbitstrick.syncat')||0;}
+function syncStore(){lset('habbitstrick.sync',SYNC.refresh?JSON.stringify({email:SYNC.email,uid:SYNC.uid,refresh:SYNC.refresh}):null);}
+function syncOn(){return !!(SYNC.refresh&&fbOn());}
+function authPw(email,pw){return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']).then(function(m){return crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode('habbitstrick-auth:'+email.toLowerCase()),iterations:100000,hash:'SHA-256'},m,256);}).then(function(bits){var a=new Uint8Array(bits),h='',i;for(i=0;i<a.length;i++)h+=(a[i]<16?'0':'')+a[i].toString(16);return h;});}
+function fbFetch(url,opt){return fetch(url,opt).then(function(r){return r.text().then(function(t){var j=null;try{j=JSON.parse(t);}catch(e){}if(!r.ok){var m=(j&&j.error&&(j.error.message||j.error.status))||('HTTP '+r.status),er=new Error(m);er.status=r.status;throw er;}return j;});});}
+function fbAuth(mode,email,apw){var c=fbCfg();return fbFetch('https://identitytoolkit.googleapis.com/v1/accounts:'+(mode==='up'?'signUp':'signInWithPassword')+'?key='+c.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:apw,returnSecureToken:true})}).then(function(j){SYNC.email=email;SYNC.uid=j.localId;SYNC.refresh=j.refreshToken;SYNC.idTok=j.idToken;SYNC.exp=Date.now()+(+j.expiresIn||3600)*1000;syncStore();return j;});}
+function fbToken(){
+  if(SYNC.idTok&&SYNC.exp>Date.now()+60000)return Promise.resolve(SYNC.idTok);
+  var c=fbCfg();
+  return fbFetch('https://securetoken.googleapis.com/v1/token?key='+c.apiKey,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(SYNC.refresh)}).then(function(j){SYNC.idTok=j.id_token;SYNC.refresh=j.refresh_token||SYNC.refresh;SYNC.exp=Date.now()+(+j.expires_in||3600)*1000;syncStore();return SYNC.idTok;});
+}
+function fbDocUrl(){var c=fbCfg();return 'https://firestore.googleapis.com/v1/projects/'+c.projectId+'/databases/(default)/documents/vaults/'+SYNC.uid;}
+function fbGet(){return fbToken().then(function(t){return fbFetch(fbDocUrl(),{headers:{Authorization:'Bearer '+t}}).then(function(j){var f=(j&&j.fields)||{};return {blob:f.blob&&f.blob.stringValue,mt:f.mt?+f.mt.integerValue:0};}).catch(function(e){if(e.status===404)return null;throw e;});});}
+function fbPut(blob,mt){return fbToken().then(function(t){return fbFetch(fbDocUrl()+'?updateMask.fieldPaths=blob&updateMask.fieldPaths=mt',{method:'PATCH',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({fields:{blob:{stringValue:blob},mt:{integerValue:String(mt)}}})});});}
+function fbSetPw(apw){var c=fbCfg();return fbToken().then(function(t){return fbFetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key='+c.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:t,password:apw,returnSecureToken:true})});}).then(function(j){if(j&&j.idToken){SYNC.idTok=j.idToken;SYNC.refresh=j.refreshToken||SYNC.refresh;SYNC.exp=Date.now()+(+j.expiresIn||3600)*1000;syncStore();}});}
+function lmt(){return +S.meta.mt||0;}
+function setSynced(mt){lset('habbitstrick.syncmt',String(mt));SYNC.last=Date.now();lset('habbitstrick.syncat',String(SYNC.last));SYNC.msg='';}
+function fillIn(rr,bb,ids,keyed){var d,k;for(d in bb){for(k in bb[d]){if(keyed&&!ids[k])continue;rr[d]=rr[d]||{};if(rr[d][k]===undefined)rr[d][k]=bb[d][k];}}}
+function mergeData(a,b,unionTasks){
+  var r=JSON.parse(JSON.stringify(a)),ids={},d;
+  if(unionTasks)b.tasks.forEach(function(t){if(!r.tasks.some(function(x){return x.id===t.id;}))r.tasks.push(JSON.parse(JSON.stringify(t)));});
+  r.tasks.forEach(function(t){ids[t.id]=1;});
+  fillIn(r.log,b.log,ids,true);fillIn(r.skip,b.skip||{},ids,true);fillIn(r.broke,b.broke||{},ids,true);
+  r.subd=r.subd||{};fillIn(r.subd,b.subd||{},ids,true);
+  for(d in b.notes){if(!r.notes[d])r.notes[d]=b.notes[d];}
+  return norm(r);
+}
+function syncUI(){var ae=document.activeElement;if(key&&view==='tasks'&&!F&&!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')))render();}
+function syncPush(){return q.then(function(){return fbPut(lget(VKEY),lmt());}).then(function(){setSynced(lmt());});}
+function syncErr(e){
+  var m=String(e&&e.message||e);
+  if(/TOKEN_EXPIRED|INVALID_REFRESH_TOKEN|USER_NOT_FOUND|USER_DISABLED|CREDENTIAL_TOO_OLD/.test(m)){SYNC.refresh='';SYNC.idTok='';syncStore();return 'You were signed out. Please sign in again.';}
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'Offline. Will try again.';
+  if(m==='PW')return 'The password changed on another device. Sign out here and sign in again with the new password.';
+  if(/PERMISSION_DENIED|Missing or insufficient/.test(m))return 'The cloud database refused access. Check the Firestore rules in your Firebase project.';
+  return 'Sync problem: '+m;
+}
+function syncNow(manual){
+  if(!syncOn()||!key||SYNC.busy)return Promise.resolve();
+  SYNC.busy=true;if(manual){SYNC.msg='Syncing...';syncUI();}
+  return fbGet().then(function(r){
+    var lm=lmt(),sm=+lget('habbitstrick.syncmt')||0;
+    if(!r||!r.blob)return syncPush();
+    var rm=r.mt;
+    if(rm===lm){setSynced(lm);return;}
+    var remoteCh=rm!==sm,localCh=lm>sm;
+    if(!remoteCh&&localCh)return syncPush();
+    var v=JSON.parse(r.blob);
+    if(v.s!==b64(salt))throw new Error('PW');
+    return decryptVault(v,key).then(function(o){
+      var rs=norm(o),both=remoteCh&&localCh;
+      if(both){var nr=rm>=lm;S=mergeData(nr?rs:S,nr?S:rs,false);S.meta.mt=Math.max(rm,lm)+1;}
+      else{S=rs;S.meta.mt=rm;}
+      return persist().then(function(){
+        applyPrefs();syncNative();
+        if(both)return syncPush();
+        setSynced(rm);
+      }).then(function(){render();});
+    },function(){throw new Error('PW');});
+  }).catch(function(e){SYNC.msg=syncErr(e);}).then(function(){SYNC.busy=false;syncUI();});
+}
+function syncSoon(){if(!syncOn())return;clearTimeout(SYNC.t);SYNC.t=setTimeout(function(){syncNow(false);},4000);}
+function syncStart(){clearInterval(SYNC.poll);SYNC.poll=setInterval(function(){if(!document.hidden)syncNow(false);},60000);setTimeout(function(){syncNow(false);},1200);}
+function syncSignOut(){SYNC.refresh='';SYNC.idTok='';SYNC.uid='';SYNC.pending=null;SYNC.msg='Signed out. Your data stays on this device.';SYNC.err='';syncStore();lset('habbitstrick.syncmt',null);}
+function emailOk(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);}
+function authErr(e,mode){
+  var m=String(e&&e.message||e);
+  if(/EMAIL_EXISTS/.test(m))return 'That email already has an account. Tap Sign in instead.';
+  if(/WEAK_PASSWORD/.test(m))return 'Choose a longer password.';
+  if(/INVALID_EMAIL/.test(m))return 'That email address looks wrong.';
+  if(/EMAIL_NOT_FOUND|INVALID_PASSWORD|INVALID_LOGIN_CREDENTIALS/.test(m))return 'Wrong email or password, or this account does not exist yet. The password is the one you use to open the app on your other device.';
+  if(/TOO_MANY_ATTEMPTS/.test(m))return 'Too many tries. Wait a few minutes.';
+  if(/OPERATION_NOT_ALLOWED/.test(m))return 'Email sign-in is not turned on in the Firebase project.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'No internet connection.';
+  return 'Could not sign in: '+m;
+}
+function localEmpty(){return !S.tasks.length;}
+function adopt(rs,k2,s2,mt){S=rs;key=k2;salt=s2;S.meta.mt=mt;return persist().then(function(){setSynced(mt);if(bioOn())nat('bioDisable');applyPrefs();syncNative();});}
+function syncConnect(mode){
+  var em=(document.getElementById('se')||{value:''}).value.trim().toLowerCase(),pw=(document.getElementById('sp')||{value:''}).value;
+  if(!emailOk(em)){SYNC.err='Enter a valid email address.';render();return;}
+  if(pw.length<6){SYNC.err='Enter your app password (at least 6 characters).';render();return;}
+  SYNC.busy=true;SYNC.err='';SYNC.msg='Working...';render();
+  var lv=null;try{lv=JSON.parse(lget(VKEY));}catch(e){}
+  var chk=mode==='up'&&lv?derive(pw,unb(lv.s)).then(function(k){return decryptVault(lv,k);}).catch(function(){throw new Error('LOCALPW');}):Promise.resolve();
+  chk.then(function(){return authPw(em,pw);}).then(function(apw){return fbAuth(mode,em,apw);}).then(function(){return fbGet();}).then(function(r){
+    if(mode==='up'||!r||!r.blob){if(mode!=='up'&&!localEmpty()||mode==='up'){return syncPush().then(function(){SYNC.msg='Connected. Your data is now backed up online.';});}SYNC.msg='Signed in. No cloud data yet.';return;}
+    var v2=JSON.parse(r.blob),s2=unb(v2.s);
+    return derive(pw,s2).then(function(k2){return decryptVault(v2,k2).then(function(o){
+      var rs=norm(o);
+      if(localEmpty())return adopt(rs,k2,s2,r.mt).then(function(){SYNC.msg='Signed in. Your cloud data is loaded.';});
+      SYNC.pending={rs:rs,k:k2,s:s2,mt:r.mt};SYNC.msg='';
+    });},function(){throw new Error('REMPW');});
+  }).catch(function(e){
+    var m=String(e&&e.message);
+    if(m==='LOCALPW')SYNC.err='That is not the password you use to open this app. Use the same password for your account.';
+    else if(m==='REMPW')SYNC.err='Signed in, but that password cannot open the cloud data. Use the password you set on your other device.';
+    else SYNC.err=authErr(e,mode);
+    if(m==='REMPW'||m==='LOCALPW'){SYNC.refresh='';syncStore();}
+    SYNC.msg='';
+  }).then(function(){SYNC.busy=false;render();});
+}
+function syncResolve(choice){
+  var p=SYNC.pending;if(!p)return;
+  SYNC.busy=true;render();
+  var res=choice==='merge'?mergeData(p.rs,S,true):p.rs;
+  var mt=choice==='merge'?Math.max(p.mt,lmt())+1:p.mt;
+  adopt(res,p.k,p.s,mt).then(function(){SYNC.pending=null;if(choice==='merge')return syncPush();}).then(function(){SYNC.msg=choice==='merge'?'Merged and synced.':'Cloud data loaded on this device.';}).catch(function(e){SYNC.msg=syncErr(e);}).then(function(){SYNC.busy=false;render();});
+}
+function lkAcct(){
+  if(busy)return;
+  var em=document.getElementById('le').value.trim().toLowerCase(),pw=document.getElementById('lp').value;lockErr='';
+  if(!emailOk(em)||pw.length<6){lockErr='Enter your email and password.';lockUI();return;}
+  busy=true;lockUI();
+  authPw(em,pw).then(function(apw){return fbAuth('in',em,apw);}).then(function(){return fbGet();}).then(function(r){
+    if(!r||!r.blob)throw new Error('NODATA');
+    var v=JSON.parse(r.blob),s2=unb(v.s);
+    return derive(pw,s2).then(function(k){return decryptVault(v,k).then(function(o){S=norm(o);key=k;salt=s2;S.meta.mt=r.mt;return persist();},function(){throw new Error('REMPW');});});
+  }).then(function(){setSynced(S.meta.mt);try{localStorage.removeItem(OLD);}catch(e){}if(bioOn())nat('bioDisable');busy=false;lockMode='unlock';openApp();}).catch(function(e){
+    var m=String(e&&e.message);key=null;salt=null;S=blank();SYNC.refresh='';syncStore();
+    lockErr=m==='NODATA'?'This account has no data yet. Open the app on your other device, then connect it in Tasks.':(m==='REMPW'?'Signed in, but that password cannot open the data.':authErr(e,'in'));
+    busy=false;lockUI();
+  });
+}
+function lockAcctUI(){
+  var el=document.getElementById('lock');
+  el.innerHTML='<div class="lk"><div class="brand">Habbit Strick</div><h1>Sign in to your account</h1><div class="sub">Use the email and password of your Habbit Strick account. Your data is downloaded and opened on this device.</div><div class="panel" style="margin-top:22px"><input type="email" class="lkin" id="le" placeholder="Email" autocomplete="email" value="'+esc(SYNC.email||'')+'"><input type="password" class="lkin" id="lp" placeholder="Password" autocomplete="current-password" style="margin-top:10px">'+(lockErr?'<p class="hint" style="color:var(--pink)">'+esc(lockErr)+'</p>':'')+'<button class="btn full" data-a="lkacctgo"'+(busy?' disabled':'')+'>'+(busy?'Please wait':'Sign in')+'</button><button class="btn ghost full" data-a="lkacctback">Back</button></div></div>';
+  setTimeout(function(){var f=document.getElementById('le');if(f&&!busy&&!f.value)f.focus();},0);
+}
+function acctPanel(){
+  var h='<div class="sec" style="margin-top:22px"><h2>Account and sync</h2></div><div class="panel">';
+  if(!fbOn()){
+    h+='<p class="hint" style="margin:0 0 10px">Sync is not set up in this build. Paste your Firebase web config below to turn it on.</p><textarea id="fbc" rows="4" placeholder="apiKey: ..., projectId: ..." style="width:100%"></textarea><button class="btn sm" data-a="fbcsave" style="margin-top:8px">Save config</button>';
+    if(SYNC.err)h+='<p class="hint" style="color:var(--pink)">'+esc(SYNC.err)+'</p>';
+    return h+'</div>';
+  }
+  if(syncOn()){
+    h+='<p class="hint" style="margin:0 0 6px">Signed in as <b>'+esc(SYNC.email)+'</b></p><p class="hint" style="margin:0 0 12px">Last synced: <b>'+(SYNC.last?new Date(SYNC.last).toLocaleString():'not yet')+'</b>. Your data is encrypted before it leaves this device, so only your password can open it.</p>';
+    if(SYNC.pending)h+='<p class="hint" style="color:var(--pink)">This account already has data online, and this device has tasks too. What should happen?</p><div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="syncres" data-v="merge">Merge both</button><button class="btn ghost sm" data-a="syncres" data-v="cloud">Use cloud data</button></div>';
+    else h+='<div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="syncnow"'+(SYNC.busy?' disabled':'')+'>Sync now</button><button class="btn ghost sm" data-a="syncout">Sign out</button></div>';
+  }else{
+    h+='<p class="hint" style="margin:0 0 12px">Use one account on your phone, Windows PC and website. Use the same password you use to open the app. If you forget it, the data cannot be recovered, because only you hold the key.</p><input type="email" id="se" placeholder="Email" autocomplete="email" value="'+esc(SYNC.email||'')+'"><input type="password" id="sp" placeholder="App password" autocomplete="current-password" style="margin-top:8px"><div class="fr" style="margin:10px 0 0;flex-wrap:wrap"><button class="btn sm" data-a="syncup"'+(SYNC.busy?' disabled':'')+'>Create account</button><button class="btn ghost sm" data-a="syncin"'+(SYNC.busy?' disabled':'')+'>Sign in</button></div>';
+  }
+  if(SYNC.err)h+='<p class="hint" style="color:var(--pink)">'+esc(SYNC.err)+'</p>';
+  if(SYNC.msg)h+='<p class="hint">'+esc(SYNC.msg)+'</p>';
+  return h+'</div>';
+}
 function backupPayload(){return enc(JSON.stringify(S)).then(function(v){return JSON.stringify({app:'habbit-strick',v:2,vault:v});});}
 function markBackup(){S.meta.lastBackup=Date.now();save();}
 function doBackupSave(){
   backupPayload().then(function(text){
     var name='habbit-strick-backup-'+today()+'.json';
     if(NAT&&typeof NAT.saveBackup==='function'){nat('saveBackup',[name,text]);return;}
+    if(DESK){DESK.saveText(name,text).then(function(ok){if(ok){markBackup();toast('Backup saved');}else toast('Not saved');});return;}
     backupText=text;markBackup();
-    msg='Copy the encrypted text in the box and keep it somewhere safe. Saving a file works in the Android app.';
+    msg='Copy the encrypted text in the box and keep it somewhere safe. Saving a file works in the Android and Windows apps.';
     render();
   }).catch(function(){msg='Could not create the backup.';render();});
 }
@@ -1285,6 +1450,9 @@ document.addEventListener('click',function(e){
   if(a==='tab'){view=v;msg='';smsg='';F=null;window.scrollTo(0,0);}
   else if(a==='lock'){lockNow();return;}
   else if(a==='lkgo'){lkgo();return;}
+  else if(a==='lkacct'){lockPrev=lockMode;lockMode='acct';lockErr='';lockUI();return;}
+  else if(a==='lkacctback'){lockMode=lockPrev||'setup';lockErr='';lockUI();return;}
+  else if(a==='lkacctgo'){lkAcct();return;}
   else if(a==='lkreset'){lkreset();return;}
   else if(a==='lkbk'){
     var rv=null;try{rv=JSON.parse(localStorage.getItem(VKEY));}catch(er){}
@@ -1320,11 +1488,24 @@ document.addEventListener('click',function(e){
     if(sv&&F&&F.subs.length<15){F.subs.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),n:sv.slice(0,60)});F.focusSub=true;}
   }
   else if(a==='subrm'){if(F)F.subs.splice(+v,1);}
+  else if(a==='deskupd'){UPD.msg='Checking...';render();DESK.checkUpdate().then(function(t){UPD.msg=t;render();});return;}
+  else if(a==='desktest'){DESK.test();toast('Test reminder sent');return;}
+  else if(a==='deskstart'){DESK.toggleStartup().then(function(v){DESK.startup=v;render();});return;}
+  else if(a==='syncup'){syncConnect('up');return;}
+  else if(a==='syncin'){syncConnect('in');return;}
+  else if(a==='syncnow'){syncNow(true);return;}
+  else if(a==='syncout'){syncSignOut();}
+  else if(a==='syncres'){syncResolve(v);return;}
+  else if(a==='fbcsave'){
+    var ft=(document.getElementById('fbc')||{value:''}).value,k1=/apiKey["']?\s*[:=]\s*["']([^"']+)/.exec(ft),k2=/projectId["']?\s*[:=]\s*["']([^"']+)/.exec(ft);
+    if(k1&&k2){lset('habbitstrick.fbcfg',JSON.stringify({apiKey:k1[1],projectId:k2[1]}));SYNC.err='';}else SYNC.err='Could not find apiKey and projectId in that text.';
+  }
   else if(a==='col'){if(F)F.color=v||'';}
   else if(a==='csv'){
     var ct=buildCsv();
     if(NAT&&typeof NAT.saveText==='function'){nat('saveText',['habbit-strick-'+today()+'.csv','text/csv',ct]);msg='';return;}
-    backupText=ct;msg='The CSV is in the box below. Copy it into a .csv file or paste it into Google Sheets. Saving a file works in the Android app.';
+    if(DESK){DESK.saveText('habbit-strick-'+today()+'.csv',ct).then(function(ok){toast(ok?'CSV saved':'Not saved');});return;}
+    backupText=ct;msg='The CSV is in the box below. Copy it into a .csv file or paste it into Google Sheets. Saving a file works in the Android and Windows apps.';
   }
   else if(a==='remtest'){nat('testReminder');toast('Test reminder sent. Check your notifications.');return;}
   else if(a==='exactset'){nat('exactSettings');return;}
@@ -1386,7 +1567,7 @@ document.addEventListener('click',function(e){
   else if(a==='bklater'){S.meta.bkSnooze=Date.now()+3*86400000;save();}
   else if(a==='bkgo'){view='tasks';window.scrollTo(0,0);}
   else if(a==='bksave'){doBackupSave();return;}
-  else if(a==='bkload'){nat('pickBackup');return;}
+  else if(a==='bkload'){if(DESK){DESK.openText().then(function(t){if(t!==null){backupText=t;msg='File loaded. Tap Import from box to restore it.';}render();});return;}nat('pickBackup');return;}
   else if(a==='exp'){backupText=JSON.stringify(S);msg='Plain text copy below. It is not encrypted, keep it private.';markBackup();render();var ta=document.getElementById('bk');if(ta){ta.focus();ta.select();}return;}
   else if(a==='imp'){doImport();return;}
   else if(a==='bioon'){
@@ -1402,7 +1583,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key!=='Enter')return;
   var el=e.target;
-  if(el.classList&&el.classList.contains('lkin')){var gb=document.querySelector('[data-a="lkgo"]');if(gb)gb.click();}
+  if(el.classList&&el.classList.contains('lkin')){var gb=document.querySelector('[data-a="lkgo"],[data-a="lkacctgo"]');if(gb)gb.click();}
   else if(el.id==='fname'&&F){formSave();}
   else if(el.id==='sn'&&F){var sb=document.querySelector('[data-a="subadd"]');if(sb)sb.click();}
 });

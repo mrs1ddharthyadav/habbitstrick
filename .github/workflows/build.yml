@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,12 +57,83 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Habbit-Strick-apk
-          path: Habbit-Strick.apk
+          name: android
+          path: |
+            Habbit-Strick.apk
+            version.json
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Copy the app into the desktop shell
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force desktop/app | Out-Null
+          Copy-Item app/src/main/assets/index.html desktop/app/index.html
+
+      - name: Install and build the Windows installer
+        shell: pwsh
+        working-directory: desktop
+        env:
+          RUN: ${{ github.run_number }}
+        run: |
+          npm pkg set version="1.$env:RUN.0"
+          npm install --no-audit --no-fund
+          npm run dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            desktop/dist/Habbit-Strick-Setup.exe
+            desktop/dist/Habbit-Strick-Setup.exe.blockmap
+            desktop/dist/latest.yml
+
+  release:
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
+          ls -la out
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Habbit-Strick.apk version.json --title "Habbit Strick" --notes "Latest build. Download Habbit-Strick.apk on your phone and install it."
+          gh release create latest out/Habbit-Strick.apk out/version.json out/Habbit-Strick-Setup.exe out/Habbit-Strick-Setup.exe.blockmap out/latest.yml --target "${{ github.sha }}" --title "Habbit Strick" --notes "Latest build. Android: Habbit-Strick.apk. Windows: Habbit-Strick-Setup.exe."
+
+  website:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp app/src/main/assets/index.html _site/index.html
+          cp -r web/. _site/ 2>/dev/null || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
