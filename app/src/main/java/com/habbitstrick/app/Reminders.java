@@ -224,7 +224,7 @@ public class Reminders {
                     if (!ok) return;
                 }
             }
-            show(c, id, t.optString("name", "your task"), t.optBoolean("q", false));
+            show(c, id, t.optString("name", "your task"), t.optBoolean("q", false), t.optBoolean("sec", false));
         } catch (Exception ignored) {
         }
     }
@@ -255,6 +255,10 @@ public class Reminders {
     }
 
     static boolean show(Context c, String id, String name, boolean quit) {
+        return show(c, id, name, quit, false);
+    }
+
+    static boolean show(Context c, String id, String name, boolean quit, boolean sec) {
         if (notifStatus(c) != 0) return false;
         createChannel(c);
         Intent open = new Intent(c, MainActivity.class);
@@ -272,13 +276,19 @@ public class Reminders {
 
         NotificationCompat.Builder nb = new NotificationCompat.Builder(c, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notif)
-                .setContentTitle("Habbit Strick")
-                .setContentText((quit ? "Keep the rule: " : "Time for: ") + name)
+                .setContentTitle(sec ? name : "Habbit Strick")
+                .setContentText(sec ? "Tap to open" : (quit ? "Keep the rule: " : "Time for: ") + name)
                 .setContentIntent(pOpen)
                 .setAutoCancel(true)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVisibility(sec ? NotificationCompat.VISIBILITY_PRIVATE : NotificationCompat.VISIBILITY_PUBLIC)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
+        if (sec) {
+            nb.setPublicVersion(new NotificationCompat.Builder(c, CHANNEL)
+                    .setSmallIcon(R.drawable.ic_notif)
+                    .setContentTitle("Reminder")
+                    .build());
+        }
         if (!"test".equals(id)) {
             Intent dn = new Intent(c, ReminderReceiver.class);
             dn.setAction(ACTION_DONE);
@@ -286,7 +296,7 @@ public class Reminders {
             dn.putExtra("nid", nid);
             PendingIntent pDone = PendingIntent.getBroadcast(c, ("d" + id).hashCode(), dn,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            nb.addAction(0, quit ? "Followed" : "Done", pDone);
+            nb.addAction(0, (quit && !sec) ? "Followed" : "Done", pDone);
         }
         nb.addAction(0, "Snooze 10 min", pSnooze);
         Notification n = nb.build();

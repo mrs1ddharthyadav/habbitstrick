@@ -115,7 +115,8 @@ function tickReminders() {
     const key = today + '|' + r.id + '|' + hm;
     if (fired.has(key)) return;
     fired.add(key);
-    notify(r.name || 'Habbit Strick', r.q ? 'Did you keep the rule today?' : 'Time for your task');
+    if (r.sec) notify(r.name || 'Reminder', ' ');
+    else notify(r.name || 'Habbit Strick', r.q ? 'Did you keep the rule today?' : 'Time for your task');
   });
   if (fired.size > 500) fired.clear();
 }
