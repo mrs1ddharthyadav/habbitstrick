@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mrs1ddharthyadav/habbitstrick/actions/workflows/build.yml"><img alt="Build" src="https://github.com/mrs1ddharthyadav/habbitstrick/actions/workflows/build.yml/badge.svg"></a>
+  <a href="https://github.com/mrs1ddharthyadav/habbitstrick/actions/workflows/build.yml"><img alt="Build status" src="https://github.com/mrs1ddharthyadav/habbitstrick/actions/workflows/build.yml/badge.svg?branch=main"></a>
   <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-3ddc84">
   <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4">
   <img alt="Encryption" src="https://img.shields.io/badge/data-AES--256%20encrypted-555">

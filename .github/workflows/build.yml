@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android and Windows
 
 on:
   push:
@@ -129,28 +129,3 @@ jobs:
             echo "Already installed? Android offers the update inside the app. Windows updates itself in the background."
           } > notes.md
           gh release create latest out/Habbit-Strick.apk out/version.json out/Habbit-Strick-Setup.exe out/Habbit-Strick-Setup.exe.blockmap out/latest.yml --target "${{ github.sha }}" --title "Habbit Strick $VER" --notes-file notes.md
-
-  website:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Assemble site
-        run: |
-          mkdir -p _site
-          cp app/src/main/assets/index.html _site/index.html
-          cp -r web/. _site/ 2>/dev/null || true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deploy
-        uses: actions/deploy-pages@v4
