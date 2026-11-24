@@ -31,7 +31,7 @@ public class Reminders {
     static final String ACTION_ONCE = "com.habbitstrick.app.REMIND_ONCE";
     static final String ACTION_SNOOZE = "com.habbitstrick.app.SNOOZE";
     static final String ACTION_DONE = "com.habbitstrick.app.DONE";
-    static final String CHANNEL = "reminders";
+    static final String CHANNEL = "reminders2";
 
     static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -62,7 +62,7 @@ public class Reminders {
                 .putInt("wTotal", o.optInt("total", 0))
                 .putInt("wStreak", o.optInt("streak", 0))
                 .apply();
-        if (changed) schedule(c);
+        schedule(c);
         HabitWidget.refresh(c);
     }
 
@@ -119,9 +119,14 @@ public class Reminders {
             if (cal.getTimeInMillis() <= System.currentTimeMillis() + 2000) {
                 cal.add(Calendar.DAY_OF_YEAR, 1);
             }
-            if (canExact(c)) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
-            } else {
+            // setAlarmClock is exempt from Doze and does not need the exact alarm permission,
+            // so it is the most dependable way to fire on time on every Android version.
+            Intent openIn = new Intent(c, MainActivity.class);
+            PendingIntent show = PendingIntent.getActivity(c, 1, openIn,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            try {
+                am.setAlarmClock(new AlarmManager.AlarmClockInfo(cal.getTimeInMillis(), show), pi);
+            } catch (Exception e) {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
             }
         } catch (Exception ignored) {
@@ -227,17 +232,30 @@ public class Reminders {
     static void createChannel(Context c) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
-        NotificationChannel ch = new NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_DEFAULT);
+        try {
+            nm.deleteNotificationChannel("reminders");
+        } catch (Exception ignored) {
+        }
+        NotificationChannel ch = new NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_HIGH);
         ch.setDescription("Task reminders from Habbit Strick");
+        ch.enableVibration(true);
+        ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(ch);
     }
 
-    static void show(Context c, String id, String name, boolean quit) {
+    /** 0 = notifications can be shown, 1 = permission not granted, 2 = switched off in system settings. */
+    static int notifStatus(Context c) {
         if (Build.VERSION.SDK_INT >= 33
                 && ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-            return;
+            return 1;
         }
+        if (!NotificationManagerCompat.from(c).areNotificationsEnabled()) return 2;
+        return 0;
+    }
+
+    static boolean show(Context c, String id, String name, boolean quit) {
+        if (notifStatus(c) != 0) return false;
         createChannel(c);
         Intent open = new Intent(c, MainActivity.class);
         open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -258,7 +276,9 @@ public class Reminders {
                 .setContentText((quit ? "Keep the rule: " : "Time for: ") + name)
                 .setContentIntent(pOpen)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
         if (!"test".equals(id)) {
             Intent dn = new Intent(c, ReminderReceiver.class);
             dn.setAction(ACTION_DONE);
@@ -271,6 +291,7 @@ public class Reminders {
         nb.addAction(0, "Snooze 10 min", pSnooze);
         Notification n = nb.build();
         NotificationManagerCompat.from(c).notify(nid, n);
+        return true;
     }
 
     /** Marks a task done from the notification. The web page applies it next time it opens. */

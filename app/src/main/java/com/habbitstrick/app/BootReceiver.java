@@ -13,5 +13,9 @@ public class BootReceiver extends BroadcastReceiver {
             HabitWidget.refresh(context);
         } catch (Exception ignored) {
         }
+        try {
+            if (Quiet.on(context)) Quiet.startService(context);
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.habbitstrick.app;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -547,8 +548,98 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void testReminder() {
-            Reminders.show(getApplicationContext(), "test", "this is how your reminders will look", false);
+        public String testReminder() {
+            boolean ok = Reminders.show(getApplicationContext(), "test", "this is how your reminders will look", false);
+            if (ok) return "ok";
+            return Reminders.notifStatus(getApplicationContext()) == 1 ? "perm" : "off";
+        }
+
+        @JavascriptInterface
+        public int notifOk() {
+            return Reminders.notifStatus(getApplicationContext());
+        }
+
+        @JavascriptInterface
+        public void notifSettings() {
+            runOnUiThread(() -> {
+                try {
+                    Intent i = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    startActivity(i);
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void quietConfig(String json) {
+            try {
+                Quiet.p(getApplicationContext()).edit().putString("q_cfg", json).apply();
+                if (Quiet.on(getApplicationContext())) Quiet.startService(getApplicationContext());
+                else Quiet.stopService(getApplicationContext());
+            } catch (Exception ignored) {
+            }
+        }
+
+        @JavascriptInterface
+        public String quietStatus() {
+            return Quiet.status(getApplicationContext());
+        }
+
+        @JavascriptInterface
+        public String quietHist() {
+            return Quiet.history(getApplicationContext());
+        }
+
+        @JavascriptInterface
+        public void quietOverlay() {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + getPackageName())));
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void quietUsage() {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String listApps() {
+            try {
+                android.content.pm.PackageManager pm = getPackageManager();
+                Intent q = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+                java.util.List<android.content.pm.ResolveInfo> l = pm.queryIntentActivities(q, 0);
+                org.json.JSONArray a = new org.json.JSONArray();
+                java.util.HashSet<String> seen = new java.util.HashSet<>();
+                for (android.content.pm.ResolveInfo r : l) {
+                    String pk = r.activityInfo.packageName;
+                    if (pk.equals(getPackageName()) || !seen.add(pk)) continue;
+                    JSONObject o = new JSONObject();
+                    o.put("p", pk);
+                    o.put("n", String.valueOf(r.loadLabel(pm)));
+                    a.put(o);
+                }
+                return a.toString();
+            } catch (Exception e) {
+                return "[]";
+            }
+        }
+
+        @JavascriptInterface
+        public void quietTest(int seconds) {
+            Context c = getApplicationContext();
+            Quiet.p(c).edit().putLong("q_lockEnd", System.currentTimeMillis() + Math.max(5, Math.min(60, seconds)) * 1000L)
+                    .putLong("q_hideUntil", 0).apply();
+            Quiet.startService(c);
         }
 
         @JavascriptInterface

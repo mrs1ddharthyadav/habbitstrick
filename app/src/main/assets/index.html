@@ -544,6 +544,7 @@ function openApp(){
   clearInterval(tickId);tickId=setInterval(tick,1000);
   applyQueue();render();syncNative();
   syncStart();
+  if(NAT){try{if(nat('notifOk')===1)nat('askNotify');var qc=qcfg();if(qc.on)nat('quietConfig',[JSON.stringify(qc)]);}catch(e){}}
   AUTO.name=String(nat('autoFolderName')||'');
   if(AUTO.name){clearTimeout(autoT);autoT=setTimeout(doAuto,6000);}
   if(!S.meta.tour&&tourI<0)setTimeout(function(){if(key&&!S.meta.tour&&tourI<0)showTour();},600);
@@ -1095,19 +1096,83 @@ function extraPanels(){
   }
   return h;
 }
+var QDEF={on:false,limit:60,gaps:[30,20,5,5],locks:[5,5,10,20,40,60],block:true,apps:[]};
+var QZ={apps:null,show:false,st:null,hist:null,msg:''};
+var SOCIAL=['com.instagram.android','com.facebook.katana','com.facebook.lite','com.zhiliaoapp.musically','com.ss.android.ugc.trill','com.snapchat.android','com.twitter.android','com.x.android','com.reddit.frontpage','com.whatsapp','com.pinterest','com.linkedin.android','com.google.android.youtube','org.telegram.messenger','com.discord','com.tumblr','com.netflix.mediaclient','in.mohalla.sharechat','com.roposo.android','com.mxtakatak.android','com.instagram.barcelona'];
+function qcfg(){var c=null;try{c=JSON.parse(localStorage.getItem('habbitstrick.quiet')||'null');}catch(e){}if(!c)c={};var o={},k;for(k in QDEF)o[k]=(c[k]!==undefined)?c[k]:QDEF[k];return o;}
+function qsave(c){try{localStorage.setItem('habbitstrick.quiet',JSON.stringify(c));}catch(e){}if(NAT)nat('quietConfig',[JSON.stringify(c)]);}
+function qrefresh(){if(!NAT)return;try{QZ.st=JSON.parse(nat('quietStatus')||'null');}catch(e){QZ.st=null;}try{QZ.hist=JSON.parse(nat('quietHist')||'null');}catch(e){QZ.hist=null;}}
+function qmin(x){x=Math.round(x);if(x<60)return x+' min';var h=Math.floor(x/60),m=x%60;return h+' h'+(m?' '+m+' min':'');}
+function qsteps(c){var r=[],t=c.limit,i,n=Math.min(6,c.locks.length+0);for(i=0;i<6;i++){t+=c.gaps[Math.min(i,c.gaps.length-1)];r.push({at:t,lock:Math.min(60,c.locks[Math.min(i,c.locks.length-1)])});}return r;}
+function quietPanel(){
+  var c=qcfg(),st=QZ.st,h='',i;
+  h+='<div class="sec" style="margin-top:22px"><h2>Phone quiet habit</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Turn your phone into a calm tool. This app counts your screen time. Past your daily limit the screen locks with a countdown, and each time you come back it locks for longer. You can also keep distracting apps closed all day.</p>';
+  h+='<div class="fr" style="margin:0 0 12px;flex-wrap:wrap"><button class="btn sm'+(c.on?'':' ghost')+'" data-a="qon">'+(c.on?'Phone quiet is ON':'Turn on')+'</button>'+(c.on?'<button class="btn ghost sm" data-a="qoff">Turn off</button>':'')+'</div>';
+  if(st){
+    var okAll=st.overlayOk&&st.usageOk&&st.notif===0;
+    h+='<div class="fl">Permissions</div>';
+    h+='<div class="skrow"><span class="nm" style="text-decoration:none">Show over other apps (lock screen)</span>'+(st.overlayOk?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qov">Allow</button>')+'</div>';
+    h+='<div class="skrow"><span class="nm" style="text-decoration:none">Usage access (block apps)</span>'+(st.usageOk?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qus">Allow</button>')+'</div>';
+    h+='<div class="skrow"><span class="nm" style="text-decoration:none">Notifications</span>'+(st.notif===0?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qnt">Allow</button>')+'</div>';
+    h+='<div class="fl">Today</div><p class="hint" style="margin:0 0 8px">Screen time <b>'+qmin(st.used/60)+'</b> of '+qmin(c.limit)+'. Locks so far: <b>'+st.locks+'</b>.'+(st.lockEnd>Date.now()?' Locked now.':' Next lock at <b>'+qmin(st.next/60)+'</b> for '+st.nextLock+' min.')+'</p>';
+  }
+  h+='<div class="fl">Daily screen limit</div><div class="fr" style="margin:0 0 4px;flex-wrap:wrap">';
+  [30,45,60,90,120].forEach(function(m){h+='<button class="btn sm'+(c.limit===m?'':' ghost')+'" data-a="qlim" data-v="'+m+'">'+qmin(m)+'</button>';});
+  h+='</div>';
+  h+='<div class="fl">What happens after the limit</div><div class="hint" style="margin:0 0 8px">';
+  qsteps(c).forEach(function(x,ix){h+=(ix+1)+'. at <b>'+qmin(x.at)+'</b> of screen time, lock for <b>'+x.lock+' min</b><br>';});
+  h+='Every lock after that is 60 min at most. The count restarts every midnight.</div>';
+  h+='<div class="fl">Block distracting apps</div><p class="hint" style="margin:0 0 8px">While Phone quiet is on, chosen apps are sent straight back to the home screen.</p>';
+  h+='<div class="fr" style="margin:0 0 8px;flex-wrap:wrap"><button class="btn sm'+(c.block?'':' ghost')+'" data-a="qblk">'+(c.block?'Blocking on':'Blocking off')+'</button><button class="btn ghost sm" data-a="qapps">'+(QZ.show?'Hide app list':'Choose apps ('+c.apps.length+')')+'</button>'+(QZ.show?'<button class="btn ghost sm" data-a="qsoc">Pick all social media</button>':'')+'</div>';
+  if(QZ.show){
+    if(!QZ.apps)h+='<p class="hint">Loading apps...</p>';
+    else QZ.apps.forEach(function(a){var on=c.apps.indexOf(a.p)>=0;h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(a.n)+'</span><button class="btn sm'+(on?'':' ghost')+'" data-a="qapp" data-v="'+esc(a.p)+'">'+(on?'Blocked':'Block')+'</button></div>';});
+  }
+  h+='<div class="fr" style="margin:12px 0 0;flex-wrap:wrap"><button class="btn ghost sm" data-a="qtest">Test the lock screen (10 s)</button><button class="btn ghost sm" data-a="qref">Refresh</button></div>';
+  h+='<p class="hint" style="margin-top:10px">The lock covers the whole screen and blocks every tap and the volume keys. Android never lets an app block the power button, but the screen stays locked when you turn it back on. The lock screen has an Emergency call button. On Xiaomi, Oppo, Vivo and Samsung, also set battery to Unrestricted so the service keeps running.</p>';
+  if(QZ.msg)h+='<p class="hint" style="color:var(--pink)">'+esc(QZ.msg)+'</p>';
+  if(QZ.hist){var ks=Object.keys(QZ.hist).sort().slice(-7).reverse();if(ks.length){h+='<div class="fl">Last days</div>';ks.forEach(function(k){h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(lf(k,{weekday:'short',day:'numeric',month:'short'}))+'</span><span class="hint">'+qmin(QZ.hist[k].m)+' · '+QZ.hist[k].l+' lock'+(QZ.hist[k].l===1?'':'s')+'</span></div>';});}}
+  h+='</div>';
+  return h;
+}
+function quietAct(a,v){
+  var c=qcfg();
+  if(a==='qon'){
+    qrefresh();var st=QZ.st||{};
+    if(!st.overlayOk){QZ.msg='First allow "Show over other apps", or the lock screen cannot appear.';nat('quietOverlay');}
+    else QZ.msg='';
+    c.on=true;qsave(c);if(st.notif!==0)nat('askNotify');if(!st.usageOk&&c.apps.length)QZ.msg+=' Also allow Usage access so apps can be blocked.';toast('Phone quiet is on');
+  }
+  else if(a==='qoff'){c.on=false;qsave(c);toast('Phone quiet is off');}
+  else if(a==='qlim'){c.limit=+v||60;qsave(c);}
+  else if(a==='qblk'){c.block=!c.block;qsave(c);}
+  else if(a==='qapps'){QZ.show=!QZ.show;if(QZ.show&&!QZ.apps){try{QZ.apps=JSON.parse(nat('listApps')||'[]').sort(function(x,y){return x.n.toLowerCase()<y.n.toLowerCase()?-1:1;});}catch(e){QZ.apps=[];}}}
+  else if(a==='qapp'){var ix=c.apps.indexOf(v);if(ix>=0)c.apps.splice(ix,1);else c.apps.push(v);qsave(c);}
+  else if(a==='qsoc'){(QZ.apps||[]).forEach(function(x){if(SOCIAL.indexOf(x.p)>=0&&c.apps.indexOf(x.p)<0)c.apps.push(x.p);});qsave(c);}
+  else if(a==='qov'){nat('quietOverlay');return true;}
+  else if(a==='qus'){nat('quietUsage');return true;}
+  else if(a==='qnt'){if(nat('notifOk')===1)nat('askNotify');else nat('notifSettings');return true;}
+  else if(a==='qtest'){qrefresh();if(QZ.st&&!QZ.st.overlayOk){QZ.msg='Allow "Show over other apps" first.';nat('quietOverlay');}else{nat('quietTest',[10]);QZ.msg='';}}
+  else if(a==='qref'){}
+  qrefresh();
+  return false;
+}
 function toolPanels(){
   var h='',i;
   if(DESK){
     h+='<div class="sec" style="margin-top:22px"><h2>Windows app</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Version <b>'+esc(String(DESK.version||''))+'</b>. Reminders show as Windows notifications while the app runs in the tray. Close the window to keep it running, and use the tray icon to quit.</p><div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="deskupd">Check for updates</button><button class="btn ghost sm" data-a="desktest">Send test reminder</button><button class="btn ghost sm" data-a="deskstart">'+(DESK.startup?'Do not start with Windows':'Start with Windows')+'</button></div>'+(UPD.msg?'<p class="hint">'+esc(UPD.msg)+'</p>':'')+'</div>';
   }
   if(NAT){
-    var ex=nat('exactOk'),bt=nat('batteryOk');
+    var ex=nat('exactOk'),bt=nat('batteryOk'),nf=nat('notifOk');
     h+='<div class="sec" style="margin-top:22px"><h2>Reminder tools</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Reminders have a Done button, so you can tick a task straight from the notification.</p><button class="btn sm" data-a="remtest">Send test reminder</button>';
+    h+='<div class="fl">Notifications: '+(nf===0?'on':(nf===1?'permission needed':'blocked in settings'))+'</div>';
+    if(nf===1||nf===2)h+='<p class="hint" style="margin:0 0 8px">Reminders cannot show until notifications are allowed.</p><button class="btn ghost sm" data-a="qnt">Allow notifications</button>';
     h+='<div class="fl">Exact alarms: '+(ex===false?'off':'on')+'</div>';
     if(ex===false)h+='<p class="hint" style="margin:0 0 8px">Without this permission Android may delay reminders by several minutes.</p><button class="btn ghost sm" data-a="exactset">Allow exact alarms</button>';
     h+='<div class="fl">Battery restrictions: '+(bt===false?'may delay reminders':'unrestricted')+'</div><p class="hint" style="margin:0 0 8px">On some phones (Xiaomi, Oppo, Vivo, Samsung) the system stops apps in the background. Open settings, choose Habbit Strick, and set battery to Unrestricted. If the test reminder arrives, you are fine.</p>';
     if(bt===false)h+='<button class="btn ghost sm" data-a="batset">Open battery settings</button>';
     h+='</div>';
+    qrefresh();h+=quietPanel();
     var at=0;try{at=+localStorage.getItem('habbitstrick.autoAt')||0;}catch(e){}
     h+='<div class="sec" style="margin-top:22px"><h2>Automatic backup</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Pick a folder once. Your encrypted backup is rewritten there after every change, one file per weekday. If that folder syncs with Google Drive, it is also a cloud backup.</p>';
     if(AUTO.name)h+='<p class="hint" style="margin:0 0 10px">Folder: <b>'+esc(AUTO.name)+'</b><br>Last saved: <b>'+(at?new Date(at).toLocaleString():'not yet')+'</b></p><div class="fr" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-a="autonow">Back up now</button><button class="btn ghost sm" data-a="autopick">Change folder</button><button class="btn ghost sm" data-a="autooff">Turn off</button></div>';
@@ -1507,7 +1572,8 @@ document.addEventListener('click',function(e){
     if(DESK){DESK.saveText('habbit-strick-'+today()+'.csv',ct).then(function(ok){toast(ok?'CSV saved':'Not saved');});return;}
     backupText=ct;msg='The CSV is in the box below. Copy it into a .csv file or paste it into Google Sheets. Saving a file works in the Android and Windows apps.';
   }
-  else if(a==='remtest'){nat('testReminder');toast('Test reminder sent. Check your notifications.');return;}
+  else if(a==='remtest'){var rr=nat('testReminder');if(rr==='perm'){nat('askNotify');toast('Allow notifications, then test again.');}else if(rr==='off'){nat('notifSettings');toast('Notifications are blocked. Turn them on for Habbit Strick.');}else toast('Test reminder sent. Check your notifications.');return;}
+  else if(['qon','qoff','qlim','qblk','qapps','qapp','qsoc','qov','qus','qnt','qtest','qref'].indexOf(a)>=0){if(quietAct(a,v))return;}
   else if(a==='exactset'){nat('exactSettings');return;}
   else if(a==='batset'){nat('batterySettings');return;}
   else if(a==='autopick'){nat('pickBackupFolder');return;}
