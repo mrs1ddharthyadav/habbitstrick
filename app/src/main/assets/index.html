@@ -1112,6 +1112,7 @@ function quietPanel(){
     var okAll=st.overlayOk&&st.usageOk&&st.notif===0;
     h+='<div class="fl">Permissions</div>';
     h+='<div class="skrow"><span class="nm" style="text-decoration:none">Show over other apps (lock screen)</span>'+(st.overlayOk?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qov">Allow</button>')+'</div>';
+    h+='<div class="skrow"><span class="nm" style="text-decoration:none">Strong lock (Accessibility: Habbit Strick Phone quiet)</span>'+(st.accOk?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qacc">Allow</button>')+'</div>';
     h+='<div class="skrow"><span class="nm" style="text-decoration:none">Usage access (block apps)</span>'+(st.usageOk?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qus">Allow</button>')+'</div>';
     h+='<div class="skrow"><span class="nm" style="text-decoration:none">Notifications</span>'+(st.notif===0?'<span class="hint">allowed</span>':'<button class="btn sm" data-a="qnt">Allow</button>')+'</div>';
     h+='<div class="fl">Today</div><p class="hint" style="margin:0 0 8px">Screen time <b>'+qmin(st.used/60)+'</b> of '+qmin(c.limit)+'. Locks so far: <b>'+st.locks+'</b>.'+(st.lockEnd>Date.now()?' Locked now.':' Next lock at <b>'+qmin(st.next/60)+'</b> for '+st.nextLock+' min.')+'</p>';
@@ -1129,7 +1130,7 @@ function quietPanel(){
     else QZ.apps.forEach(function(a){var on=c.apps.indexOf(a.p)>=0;h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(a.n)+'</span><button class="btn sm'+(on?'':' ghost')+'" data-a="qapp" data-v="'+esc(a.p)+'">'+(on?'Blocked':'Block')+'</button></div>';});
   }
   h+='<div class="fr" style="margin:12px 0 0;flex-wrap:wrap"><button class="btn ghost sm" data-a="qtest">Test the lock screen (10 s)</button><button class="btn ghost sm" data-a="qref">Refresh</button></div>';
-  h+='<p class="hint" style="margin-top:10px">The lock covers the whole screen and blocks every tap and the volume keys. Android never lets an app block the power button, but the screen stays locked when you turn it back on. The lock screen has an Emergency call button. On Xiaomi, Oppo, Vivo and Samsung, also set battery to Unrestricted so the service keeps running.</p>';
+  h+='<p class="hint" style="margin-top:10px">The lock covers the whole screen and blocks every tap and the volume keys. With the Accessibility permission on, the lock covers the status bar and navigation, swallows volume and other keys, and sends you back whenever you try to leave. Android never lets an app block the power button itself, but the screen stays locked when you turn it back on. The lock screen has an Emergency call button. On Xiaomi, Oppo, Vivo and Samsung, also set battery to Unrestricted so the service keeps running.</p>';
   if(QZ.msg)h+='<p class="hint" style="color:var(--pink)">'+esc(QZ.msg)+'</p>';
   if(QZ.hist){var ks=Object.keys(QZ.hist).sort().slice(-7).reverse();if(ks.length){h+='<div class="fl">Last days</div>';ks.forEach(function(k){h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(lf(k,{weekday:'short',day:'numeric',month:'short'}))+'</span><span class="hint">'+qmin(QZ.hist[k].m)+' · '+QZ.hist[k].l+' lock'+(QZ.hist[k].l===1?'':'s')+'</span></div>';});}}
   h+='</div>';
@@ -1139,7 +1140,8 @@ function quietAct(a,v){
   var c=qcfg();
   if(a==='qon'){
     qrefresh();var st=QZ.st||{};
-    if(!st.overlayOk){QZ.msg='First allow "Show over other apps", or the lock screen cannot appear.';nat('quietOverlay');}
+    if(!st.accOk){QZ.msg='For a lock that cannot be escaped, turn on Habbit Strick Phone quiet in Accessibility, then come back and tap Turn on again.';nat('quietAccess');}
+    else if(!st.overlayOk&&!st.accOk){QZ.msg='First allow "Show over other apps", or the lock screen cannot appear.';nat('quietOverlay');}
     else QZ.msg='';
     c.on=true;qsave(c);if(st.notif!==0)nat('askNotify');if(!st.usageOk&&c.apps.length)QZ.msg+=' Also allow Usage access so apps can be blocked.';toast('Phone quiet is on');
   }
@@ -1149,10 +1151,11 @@ function quietAct(a,v){
   else if(a==='qapps'){QZ.show=!QZ.show;if(QZ.show&&!QZ.apps){try{QZ.apps=JSON.parse(nat('listApps')||'[]').sort(function(x,y){return x.n.toLowerCase()<y.n.toLowerCase()?-1:1;});}catch(e){QZ.apps=[];}}}
   else if(a==='qapp'){var ix=c.apps.indexOf(v);if(ix>=0)c.apps.splice(ix,1);else c.apps.push(v);qsave(c);}
   else if(a==='qsoc'){(QZ.apps||[]).forEach(function(x){if(SOCIAL.indexOf(x.p)>=0&&c.apps.indexOf(x.p)<0)c.apps.push(x.p);});qsave(c);}
+  else if(a==='qacc'){nat('quietAccess');return true;}
   else if(a==='qov'){nat('quietOverlay');return true;}
   else if(a==='qus'){nat('quietUsage');return true;}
   else if(a==='qnt'){if(nat('notifOk')===1)nat('askNotify');else nat('notifSettings');return true;}
-  else if(a==='qtest'){qrefresh();if(QZ.st&&!QZ.st.overlayOk){QZ.msg='Allow "Show over other apps" first.';nat('quietOverlay');}else{nat('quietTest',[10]);QZ.msg='';}}
+  else if(a==='qtest'){qrefresh();if(QZ.st&&!QZ.st.overlayOk&&!QZ.st.accOk){QZ.msg='Allow the Accessibility lock (or "Show over other apps") first.';nat('quietAccess');}else{nat('quietTest',[10]);QZ.msg='';}}
   else if(a==='qref'){}
   qrefresh();
   return false;
@@ -1573,7 +1576,7 @@ document.addEventListener('click',function(e){
     backupText=ct;msg='The CSV is in the box below. Copy it into a .csv file or paste it into Google Sheets. Saving a file works in the Android and Windows apps.';
   }
   else if(a==='remtest'){var rr=nat('testReminder');if(rr==='perm'){nat('askNotify');toast('Allow notifications, then test again.');}else if(rr==='off'){nat('notifSettings');toast('Notifications are blocked. Turn them on for Habbit Strick.');}else toast('Test reminder sent. Check your notifications.');return;}
-  else if(['qon','qoff','qlim','qblk','qapps','qapp','qsoc','qov','qus','qnt','qtest','qref'].indexOf(a)>=0){if(quietAct(a,v))return;}
+  else if(['qon','qoff','qlim','qblk','qapps','qapp','qsoc','qacc','qov','qus','qnt','qtest','qref'].indexOf(a)>=0){if(quietAct(a,v))return;}
   else if(a==='exactset'){nat('exactSettings');return;}
   else if(a==='batset'){nat('batterySettings');return;}
   else if(a==='autopick'){nat('pickBackupFolder');return;}

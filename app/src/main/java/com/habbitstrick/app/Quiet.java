@@ -41,6 +41,16 @@ class Quiet {
         return Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c);
     }
 
+    static boolean accOk(Context c) {
+        try {
+            String v = android.provider.Settings.Secure.getString(c.getContentResolver(),
+                    android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            return v != null && v.contains(c.getPackageName() + "/" + LockAccess.class.getName());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     static boolean usageOk(Context c) {
         try {
             AppOpsManager a = (AppOpsManager) c.getSystemService(Context.APP_OPS_SERVICE);
@@ -164,6 +174,7 @@ class Quiet {
             o.put("nextLock", lockMinutes(cfg, level));
             o.put("overlayOk", overlayOk(c));
             o.put("usageOk", usageOk(c));
+            o.put("accOk", accOk(c));
             o.put("notif", Reminders.notifStatus(c));
         } catch (Exception ignored) {
         }

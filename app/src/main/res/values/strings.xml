@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_desc">Today\'s progress and your streak</string>
+    <string name="lock_access_desc">Used only by Phone quiet to cover the screen and block keys while a lock countdown is running. It does not read your screen.</string>
 </resources>

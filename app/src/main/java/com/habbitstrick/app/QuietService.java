@@ -66,6 +66,7 @@ public class QuietService extends Service {
     private long usedMs = 0;
 
     private View overlay;
+    private WindowManager ovWm;
     private TextView clock;
     private TextView sub;
 
@@ -76,7 +77,7 @@ public class QuietService extends Service {
                 onTick();
             } catch (Exception ignored) {
             }
-            h.postDelayed(this, pm != null && pm.isInteractive() ? 1000 : 10000);
+            h.postDelayed(this, pm != null && pm.isInteractive() ? (sp.getLong("q_lockEnd", 0) > System.currentTimeMillis() ? 400 : 1000) : 10000);
         }
     };
 
@@ -289,7 +290,11 @@ public class QuietService extends Service {
     /* ---------- lock overlay ---------- */
 
     private void showOverlay(long remainMs) {
-        if (!Quiet.overlayOk(this)) return;
+        boolean acc = LockAccess.inst != null;
+        if (!acc && !Quiet.overlayOk(this)) return;
+        if (overlay != null && !overlay.isAttachedToWindow()) {
+            hideOverlay();
+        }
         long sec = Math.max(0, (remainMs + 999) / 1000);
         String t = String.format(java.util.Locale.US, "%02d:%02d", sec / 60, sec % 60);
         if (overlay != null) {
@@ -357,9 +362,11 @@ public class QuietService extends Service {
         lp.topMargin = 40;
         box.addView(em, lp);
 
-        int type = Build.VERSION.SDK_INT >= 26
+        int type = acc ? WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                : (Build.VERSION.SDK_INT >= 26
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                : WindowManager.LayoutParams.TYPE_PHONE;
+                : WindowManager.LayoutParams.TYPE_PHONE);
+        WindowManager useWm = acc ? (WindowManager) LockAccess.inst.getSystemService(Context.WINDOW_SERVICE) : wm;
         WindowManager.LayoutParams wp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -380,7 +387,8 @@ public class QuietService extends Service {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         try {
-            wm.addView(root, wp);
+            useWm.addView(root, wp);
+            ovWm = useWm;
             overlay = root;
             root.requestFocus();
         } catch (Exception e) {
@@ -391,7 +399,7 @@ public class QuietService extends Service {
     private void hideOverlay() {
         if (overlay != null) {
             try {
-                wm.removeView(overlay);
+                (ovWm != null ? ovWm : wm).removeView(overlay);
             } catch (Exception ignored) {
             }
             overlay = null;

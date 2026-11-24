@@ -603,6 +603,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void quietAccess() {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void quietUsage() {
             runOnUiThread(() -> {
                 try {
