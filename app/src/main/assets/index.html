@@ -196,6 +196,31 @@ body.big .wrap{zoom:1.12}
 .conf{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:120}
 .conf i{position:absolute;top:-16px;width:8px;height:14px;border-radius:2px;animation:cf 1.8s ease-in forwards}
 @keyframes cf{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
+#urge{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.72);display:grid;place-items:end center;padding:18px 18px calc(24px + env(safe-area-inset-bottom,0px));overflow:auto}
+.ucard{max-height:calc(100vh - 40px);overflow:auto}
+.ucard p{font-size:14.5px}
+.ubig{font:700 64px var(--display);text-align:center;margin:6px 0 10px;letter-spacing:1px}
+.plansec{border:1px solid var(--line);border-radius:18px;padding:14px;margin:14px 0 4px;background:var(--card2)}
+.plansec input{background:var(--bg)}
+.plan{border-left:3px solid var(--accent);background:var(--card2);border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:14.5px;line-height:1.45}
+.plansec .plan{background:var(--bg)}
+.pv{font-size:14.5px;margin-bottom:2px}
+.tpls button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.libbox{margin:0 0 14px}
+.libi{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin:0 0 7px;color:var(--text);font:inherit;cursor:pointer}
+.libi b{display:block;font-weight:600;font-size:14.5px}
+.libi span{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+.nudge{color:var(--pink);margin-top:3px}
+.ulink{color:var(--pink);text-decoration:underline;cursor:pointer}
+.scii{border-top:1px solid var(--line)}
+.scii:first-of-type{border-top:0}
+.scii>button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--text);font:500 14.5px var(--sans);padding:11px 0;cursor:pointer}
+.scii>button span{flex:none;width:24px;height:24px;border-radius:8px;background:var(--card2);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+.scii.on>button span{background:var(--accent);color:#fff}
+.scib{padding:0 0 12px 34px;font-size:14px}
+.scib p{margin:0 0 8px}
+.scib .src{color:var(--muted);font-size:12.5px}
+body.light #urge{background:rgba(0,0,0,.4)}
 #tour{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:grid;place-items:end center;padding:18px 18px calc(110px + env(safe-area-inset-bottom,0px))}
 .tcard{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:22px;width:min(100%,420px)}
 .tcard h3{font:700 22px var(--display);margin:10px 0 8px}
@@ -257,7 +282,7 @@ var OLD='dailytracker.v1',VKEY='habbitstrick.vault';
 var NAT=(typeof window.Android==='object'&&window.Android)?window.Android:null;
 var DESK=(typeof window.Desktop==='object'&&window.Desktop)?window.Desktop:null;
 function nat(m,a){try{if(NAT&&typeof NAT[m]==='function')return NAT[m].apply(NAT,a||[]);}catch(e){}return undefined;}
-function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],subd:{},timer:null};}
+function blank(){return {tasks:[],log:{},notes:{},meta:{},seen:{},skip:{},broke:{},vac:[],subd:{},timer:null,urges:[]};}
 function norm(o){
   if(!o||typeof o!=='object')o={};
   if(!Array.isArray(o.tasks))o.tasks=[];
@@ -270,6 +295,7 @@ function norm(o){
   if(!Array.isArray(o.vac))o.vac=[];
   if(!o.subd||typeof o.subd!=='object')o.subd={};
   if(o.timer===undefined)o.timer=null;
+  if(!Array.isArray(o.urges))o.urges=[];
   return o;
 }
 var S=blank(),key=null,salt=null,q=Promise.resolve(),W=null;
@@ -607,18 +633,21 @@ function boot(){
 document.addEventListener('visibilitychange',function(){if(document.hidden){hiddenAt=Date.now();}else if(key&&hiddenAt&&Date.now()-hiddenAt>60000){lockNow();}else if(key){applyQueue();syncNow(false);}});
 
 /* ---------- task form ---------- */
-function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',subs:[],tod:'any',color:'',chal:0,wt:150};}
+function newDraft(){return {mode:'add',id:null,name:'',cat:'General',type:'daily',date:cur,sched:'daily',days:[0,1,2,3,4],wk:3,target:1,unit:'',step:1,timer:false,rem:[],orig:null,kind:'do',subs:[],tod:'any',color:'',chal:0,wt:150,plan:{}};}
 function draftFrom(t){
   var d=t.type==='once'?t.date:t.created;
-  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do',subs:(t.subs||[]).map(function(x){return {id:x.id,n:x.n};}),tod:t.tod||'any',color:t.color||'',chal:t.chal||0,wt:t.wt||150};
+  return {mode:'edit',id:t.id,name:t.name,cat:t.cat,type:t.type,date:d,sched:t.sched||'daily',days:(t.days||[0,1,2,3,4,5,6]).slice(),wk:t.wk||3,target:tgt(t),unit:t.unit||'',step:t.step>0?t.step:1,timer:!!t.timer,rem:(t.rem||[]).slice(),orig:d,kind:t.kind==='quit'?'quit':'do',subs:(t.subs||[]).map(function(x){return {id:x.id,n:x.n};}),tod:t.tod||'any',color:t.color||'',chal:t.chal||0,wt:t.wt||150,plan:JSON.parse(JSON.stringify(t.plan||{}))};
 }
 function opts(list,sel){return list.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+c+'</option>';}).join('');}
 function formHtml(){
   var f=F,h='<div class="panel">',isw=(f.type==='daily'&&f.sched==='wtotal'&&f.kind!=='quit');
-  if(f.mode==='add'){h+='<div class="fl" style="margin-top:0">Quick start</div><div class="tpls">'+TPL.map(function(x,i){return '<button data-a="tpl" data-v="'+i+'">'+esc(x.n)+'</button>';}).join('')+'</div>';}
+  if(f.mode==='add'){h+='<div class="fl" style="margin-top:0">Habit library</div><button class="btn '+(f.lib?'':'ghost ')+'full" style="margin:0 0 12px" data-a="libopen">'+(f.lib?'Hide the habit library':'Browse '+(LIB.do.length+LIB.quit.length)+' science-backed habits')+'</button>'+(f.lib?libHtml():'');}
+  if(f.mode==='add'&&!f.lib){h+='<div class="fl" style="margin-top:0">Quick start</div><div class="tpls">'+TPL.map(function(x,i){return '<button data-a="tpl" data-v="'+i+'">'+esc(x.n)+'</button>';}).join('')+'</div>';}
   h+='<div class="fl" style="margin-top:0">'+(f.mode==='add'?'New task':'Edit task')+'</div><input type="text" id="fname" data-f="name" placeholder="'+(f.kind==='quit'?'What do you want to quit? e.g. No sugar':'What do you want to get done?')+'" maxlength="120" value="'+esc(f.name)+'">';
   h+='<div class="fl">Habit type</div><div class="seg"><button data-a="kind" data-v="do" class="'+(f.kind!=='quit'?'on':'')+'">Build a habit</button><button data-a="kind" data-v="quit" class="'+(f.kind==='quit'?'on':'')+'">Quit a habit</button></div>';
   if(f.kind==='quit')h+='<p class="hint">Each day, tap Followed if you kept the rule or Broke it if you slipped. Followed counts as done. Broke it counts as not done and ends the streak.</p>';
+  if(f.libPhone&&f.kind==='quit')h+='<p class="hint" style="color:var(--pink)">Tip: turn on Phone quiet in the Tasks tab to lock your phone after your daily limit and block these apps.</p>';
+  h+=planForm(f);
   h+='<div class="fr"><select data-f="cat">'+opts(CATS,f.cat)+'</select><select data-f="type"><option value="daily"'+(f.type==='daily'?' selected':'')+'>Repeats</option><option value="once"'+(f.type==='once'?' selected':'')+'>Only on that date</option></select></div>';
   h+='<div class="fl">'+(f.type==='once'?'Date':'Starts on')+'</div><input type="date" data-f="date" value="'+esc(f.date)+'">';
   if(f.type==='daily'){
@@ -675,7 +704,7 @@ function formSave(){
   if(f.type==='daily'&&sc==='wtotal'&&quit)sc='daily';
   if(iswt&&!(Number(f.wt)>0)){ferr='Set a weekly total above 0.';render();return;}
   if(f.type==='daily'&&sc==='days'&&!f.days.length){ferr='Pick at least one weekday.';render();return;}
-  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:iswt?1:tg,wt:iswt?Number(f.wt):0,subs:(quit||iswt)?[]:f.subs.map(function(x){return {id:x.id,n:x.n};}),tod:f.tod||'any',color:f.color||'',chal:(f.type==='daily'?(+f.chal||0):0),unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do'};
+  var fields={name:name,cat:f.cat,type:f.type,sched:sc,days:f.days.slice().sort(),wk:wk,target:iswt?1:tg,wt:iswt?Number(f.wt):0,subs:(quit||iswt)?[]:f.subs.map(function(x){return {id:x.id,n:x.n};}),tod:f.tod||'any',color:f.color||'',chal:(f.type==='daily'?(+f.chal||0):0),unit:quit?'':(f.timer?'min':String(f.unit||'').trim()),step:quit?1:st,timer:quit?false:!!f.timer,rem:f.rem.slice(),kind:quit?'quit':'do',plan:cleanPlan(f.plan)};
   if(f.mode==='add'){
     var t={id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),created:date,date:date};
     for(var k in fields)t[k]=fields[k];
@@ -696,7 +725,9 @@ function onField(e){
   var el=e.target,f=el.getAttribute&&el.getAttribute('data-f');
   if(!f||!F)return;
   var v=(el.type==='checkbox')?el.checked:el.value;
+  if(f.slice(0,2)==='p_'){F.plan=F.plan||{};F.plan[f.slice(2)]=v;var pv=document.getElementById('planprev');if(pv){var ps=planSentence(F.kind,F.name,F.plan);pv.textContent=ps;pv.hidden=!ps;}return;}
   if(f==='target'||f==='step'||f==='wk'||f==='wt')F[f]=(v===''?'':Number(v));else F[f]=v;
+  if(f==='name'){var pv2=document.getElementById('planprev');if(pv2){var ps2=planSentence(F.kind,F.name,F.plan);pv2.textContent=ps2;pv2.hidden=!ps2;}}
   if(e.type==='change'&&(f==='type'||f==='sched'||f==='timer'||f==='target')){
     if(f==='timer'&&v)F.unit='min';
     if(f==='timer'&&!v)F.unit='';
@@ -730,8 +761,11 @@ function rowHtml(t){
   h+='<div class="tk'+(done?' done':'')+(q?' qh':'')+(brk?' broke':'')+'" data-id="'+t.id+'"'+(openId===t.id?' style="transform:translateX(-'+ACTW+'px)"':'')+'>';
   if(!q&&!wtt)h+='<button class="chk'+(done?' on':'')+'"'+(t.color?' style="border-color:'+t.color+(done?';background:'+t.color:'')+'"':'')+' data-a="tog" data-id="'+t.id+'" aria-label="Toggle">'+CHECK+'</button>';
   h+='<div class="tn" data-a="detail" data-id="'+t.id+'"><div class="nm">'+(t.pin?'<i class="pdot"></i>':'')+esc(t.name)+'</div>';
+  var ng=nudge(t);
+  if(ng)h+='<div class="foot nudge">'+esc(ng)+'</div>';
   if(q){
-    h+='<div class="foot" style="'+(brk?'color:var(--pink)':'')+'">'+(brk?'You broke the rule today':(done?'You followed the rule today':'Did you keep the rule today?'))+'</div><div class="foot">'+sub.join(' · ')+'</div>';
+
+    h+='<div class="foot" style="'+(brk?'color:var(--pink)':'')+'">'+(brk?'You broke the rule today':(done?'You followed the rule today':'Did you keep the rule today?'))+'</div><div class="foot">'+sub.join(' · ')+'</div>'+(cur===today()&&!brk?'<div class="foot"><span class="ulink" data-a="urge" data-v="'+t.id+'">Ride the urge</span></div>':'');
   }else if(multi){
     h+='<div class="bar"><i data-bar="'+t.id+'" style="width:'+Math.min(100,disp/tg*100)+'%"></i></div><div class="foot" data-live="'+(run?t.id:'')+'">'+fmtNum(disp)+' / '+fmtNum(tg)+(hasSubs(t)?' steps':(t.unit?' '+esc(t.unit):''))+(wtt?' this week':'')+(run?', '+mmss(elapsedMin()):'')+'</div><div class="foot">'+sub.join(' · ')+'</div>';
   }else{
@@ -916,7 +950,7 @@ function renderDash(){
   h+='<div class="sec" style="margin-top:22px"><h2>30 day trend</h2></div><div class="panel">'+trendSvg()+'</div>';
   var wb=weekdayBars();
   h+='<div class="sec" style="margin-top:22px"><h2>Best weekday</h2></div><div class="panel">'+wb.html+'<p class="hint">'+(wb.best?'Your strongest day is '+wb.best+'.':'Not enough data yet.')+'</p></div>';
-  h+='<div class="sec" style="margin-top:22px"><h2>Mood and habits</h2></div><div class="panel">'+moodHtml()+'</div>';
+  h+='<div class="sec" style="margin-top:22px"><h2>Mood and habits</h2></div><div class="panel">'+moodHtml()+'</div>'+urgeDash();
   var c=badgeCtx(),got=0,bh='<div class="bgs">';
   BADGES.forEach(function(b){var ok=b.ok(c);if(ok)got++;bh+='<div class="bgc'+(ok?' on':'')+'"><div class="ic">'+(ok?CHECK:'')+'</div><div><b>'+b.n+'</b><span>'+b.d+'</span></div></div>';});
   bh+='</div>';
@@ -1034,6 +1068,7 @@ function renderDetail(){
   var wk=isWeekly(t);
   h+='<div class="g2">'+tile(wk?'This week':(t.kind==='quit'?'Clean streak':'Streak'),wk?weekCount(t,tdy)+'/'+(wkT(t)):tw.cur,wk?'Weekly goal':'Longest: <b>'+tw.best+'</b>')+tile(t.kind==='quit'?'Days followed':'Check-ins',tw.checks,t.kind==='quit'?'Rule kept':'Total completed')+tile('30 day rate',tw.rate+'<small>%</small>','Of scheduled days')+(t.type==='daily'?tile('Strength',strength(t)+'<small>%</small>','Habit strength<br>Forgives a missed day'):'')+'</div>';
   if(t.chal)h+=chalHtml(t);
+  h+=scienceDetail(t);
   var mon=shift(tdy,-dow(tdy)),start=shift(mon,-19*7),cells='';
   for(var wi=0;wi<20;wi++)for(var r=0;r<7;r++){
     var d=shift(start,wi*7+r),cls='c';
@@ -1055,6 +1090,231 @@ function renderDetail(){
   h+='</div></div>';
   h+='<div class="fr"><button class="btn ghost" style="flex:1" data-a="edit" data-id="'+t.id+'">Edit</button>'+(t.type==='daily'?'<button class="btn ghost" style="flex:1" data-a="arch" data-id="'+t.id+'">'+(t.archived?'Restore':'Archive')+'</button>':'')+'</div>';
   return h;
+}
+
+/* ---------- habit science ---------- */
+var LIB={
+do:[
+{n:'Drink water',cat:'Health',t:8,u:'glasses',cue:'wake up',where:'from the bottle on my desk',tiny:'one glass',rew:'',why:'More energy and fewer headaches'},
+{n:'Morning workout',cat:'Health',t:20,tm:1,cue:'brush my teeth in the morning',where:'on my mat',tiny:'5 push ups',rew:'my favourite playlist, only during workouts',why:'A stronger body and better mood'},
+{n:'Walk',cat:'Health',t:30,tm:1,cue:'finish lunch',where:'around the block',tiny:'walk to the end of the street',rew:'a podcast I only listen to while walking',why:'Clear head and healthy heart'},
+{n:'Stretch',cat:'Health',t:10,tm:1,cue:'get out of bed',where:'next to my bed',tiny:'one stretch',rew:'',why:'Less stiffness and better posture'},
+{n:'Morning sunlight',cat:'Health',t:10,tm:1,cue:'finish breakfast',where:'outside or on the balcony',tiny:'step outside for 2 minutes',rew:'my tea, outside',why:'Better sleep at night'},
+{n:'Eat a fruit',cat:'Health',t:1,cue:'eat lunch',where:'',tiny:'half a fruit',rew:'',why:'Better health without dieting'},
+{n:'Sleep before 11 pm',cat:'Health',t:1,cue:'see 10:30 pm on the clock',where:'',tiny:'lights off and phone outside the room',rew:'',why:'Wake up fresh and focused'},
+{n:'Wake up at 6 am',cat:'Health',t:1,cue:'hear the alarm across the room',where:'',tiny:'feet on the floor and open the curtains',rew:'',why:'A calm head start on the day'},
+{n:'Read',cat:'Study',t:20,tm:1,cue:'get into bed',where:'with the book on my pillow',tiny:'one page',rew:'',why:'Learn something every day'},
+{n:'Study session',cat:'Study',t:60,tm:1,cue:'finish breakfast',where:'at my desk, phone in another room',tiny:'open my notes and study 5 minutes',rew:'a short break with a snack after',why:'Pass exams with less stress'},
+{n:'Practise coding',cat:'Study',t:30,tm:1,cue:'open my laptop after class',where:'in VS Code',tiny:'write one line of code',rew:'',why:'Become a good programmer'},
+{n:'Learn a language',cat:'Study',t:15,tm:1,cue:'make my morning tea',where:'',tiny:'learn 5 words',rew:'',why:'Talk to more people'},
+{n:'Revise notes',cat:'Study',t:15,tm:1,cue:'come back from college',where:'at my desk',tiny:'read one page of notes',rew:'',why:'Remember what I learn'},
+{n:'Meditate',cat:'Personal',t:10,tm:1,cue:'sit down after waking',where:'in a quiet corner',tiny:'3 slow breaths',rew:'',why:'A calmer, more focused mind'},
+{n:'Write journal',cat:'Personal',t:1,cue:'put my phone on charge at night',where:'in my notebook',tiny:'write one sentence',rew:'',why:'Understand myself better'},
+{n:'Gratitude: 3 good things',cat:'Personal',t:1,cue:'sit down for dinner',where:'',tiny:'name one good thing',rew:'',why:'Notice what is going well'},
+{n:'Plan tomorrow',cat:'Work',t:1,cue:'finish dinner',where:'in this app',tiny:'write the top 1 task',rew:'',why:'Start each day knowing what matters'},
+{n:'Deep work block',cat:'Work',t:50,tm:1,cue:'start my work session',where:'with notifications off',tiny:'work 10 minutes',rew:'a walk after',why:'Do work I am proud of'},
+{n:'Clean room',cat:'Home',t:10,tm:1,cue:'come home',where:'',tiny:'put away 3 things',rew:'music while cleaning',why:'A calm space helps a calm mind'},
+{n:'Make my bed',cat:'Home',t:1,cue:'get out of bed',where:'',tiny:'pull the sheet straight',rew:'',why:'A first win every morning'},
+{n:'Call family',cat:'Personal',t:1,cue:'finish dinner',where:'',tiny:'send one message',rew:'',why:'Stay close to the people I love'}
+],
+quit:[
+{n:'No social media scrolling',cat:'Personal',trig:['Bored','In bed','Waiting','Phone in hand'],swap:'read one page or walk for 2 minutes',fric:'log out, move the apps off my home screen and turn on Phone quiet',why:'Get my time and focus back',phone:1},
+{n:'No phone after 10 pm',cat:'Personal',trig:['In bed','Late night','Bored'],swap:'read a paper book',fric:'charge my phone outside the bedroom',why:'Sleep better and wake up fresh',phone:1},
+{n:'No YouTube binge',cat:'Personal',trig:['Bored','After meals','Late night'],swap:'close the app after one video and stand up',fric:'turn off autoplay and log out',why:'Use my evenings for what matters',phone:1},
+{n:'No gaming on weekdays',cat:'Personal',trig:['Bored','Stressed','Alone at home'],swap:'go outside or call a friend',fric:'uninstall the game from my phone on Sunday night',why:'Keep weekdays for study and work'},
+{n:'No procrastinating',cat:'Work',trig:['Task feels hard','Tired','Phone in hand'],swap:'work on the task for just 2 minutes',fric:'keep my phone in another room while I work',why:'Finish things on time without panic'},
+{n:'No smoking',cat:'Health',trig:['Stressed','After meals','Tea or coffee','With certain people'],swap:'chew gum, drink water and take 10 slow breaths',fric:'throw away cigarettes and lighters, avoid the shop on my route',why:'Breathe freely and live longer'},
+{n:'No gutka or tobacco',cat:'Health',trig:['After meals','Stressed','With certain people'],swap:'chew saunf (fennel seeds) or gum',fric:'do not carry spare change, take a different road home',why:'Protect my mouth and health'},
+{n:'No alcohol',cat:'Health',trig:['With certain people','Weekend','Stressed'],swap:'order a soft drink or lime soda',fric:'keep no alcohol at home',why:'Clear head and more money'},
+{n:'No junk food',cat:'Health',trig:['Bored','Late night','Stressed','Hungry'],swap:'eat fruit or a handful of nuts first',fric:'do not keep it at home, shop after eating',why:'Feel lighter and healthier'},
+{n:'No sugar or sweets',cat:'Health',trig:['After meals','Stressed','Tired'],swap:'drink water and eat a fruit',fric:'keep sweets out of sight and out of the house',why:'Steady energy all day'},
+{n:'No energy drinks or cola',cat:'Health',trig:['Tired','Studying late'],swap:'drink water or plain tea',fric:'do not buy them in bulk',why:'Better sleep and teeth'},
+{n:'No snoozing the alarm',cat:'Health',trig:['Tired','Late night'],swap:'stand up the moment it rings',fric:'put the alarm across the room',why:'Own my mornings'},
+{n:'No nail biting',cat:'Personal',trig:['Stressed','Bored','Watching videos'],swap:'make a fist or hold a stress ball for one minute',fric:'keep nails short and use bitter nail polish',why:'Healthy hands I am not embarrassed by'},
+{n:'No adult content',cat:'Personal',trig:['Alone at home','In bed','Late night','Bored'],swap:'leave the room, splash cold water on my face or call someone',fric:'use a content blocker and keep my phone out of bed',why:'A clear mind and real relationships',phone:1},
+{n:'No negative self-talk',cat:'Personal',trig:['Made a mistake','Tired','Stressed'],swap:'say what I would say to a good friend',fric:'',why:'Treat myself with respect'},
+{n:'No impulse buying',cat:'Personal',trig:['Bored','Sale notification','Stressed'],swap:'add it to a wishlist and wait 48 hours',fric:'remove saved cards and turn off shopping notifications',why:'Save money for what matters'}
+]};
+var TRIGS=['Bored','Stressed','Tired','Lonely','Hungry','After meals','In bed','Phone in hand','Late night','With certain people','Alone at home','Waiting'];
+var SCI=[
+['Habits form by repetition in the same context','In a UCL study, people took 66 days on average before a daily habit felt automatic, from 18 to 254 days depending on the person and the habit. Simple habits form faster.','Use the 66 day challenge and watch the repetitions bar on each task.','Lally et al., 2010, European Journal of Social Psychology'],
+['Missing one day does not ruin a habit','The same study found that missing a single day did not hurt habit formation. Being inconsistent for long stretches did.','Habit strength forgives a missed day, and the Today page reminds you to never miss twice.','Lally et al., 2010'],
+['Make an if-then plan','Plans in the form "If (situation), then I will (action)" made people much more likely to follow through, across 94 studies (effect size d = 0.65).','Each habit gets a plan sentence: "After I ..., I will ..." or "If I feel the urge, then I will ...".','Gollwitzer and Sheeran, 2006'],
+['Stack it on a routine you already have','Habits are cued by context. Tying a new habit to something you already do every day gives it a reliable cue.','Fill in "After I" with an existing routine like brushing your teeth.','Wood and Neal, 2007; Fogg, Tiny Habits'],
+['Start tiny on bad days','Simple actions become automatic faster than complex ones. Doing a tiny version keeps the cue and the repetition alive.','Each habit has a tiny version, shown when you missed yesterday.','Lally et al., 2010; Fogg, 2019'],
+['Pair it with something you enjoy','People who could only listen to gripping audiobooks at the gym went to the gym more often. This is called temptation bundling.','Use "Pair it with" to link a treat to the habit.','Milkman, Minson and Volpp, 2014'],
+['Track and record your progress','A review of 138 studies with 19,951 people found that monitoring progress helps reach goals, more so when it is physically recorded.','Check-ins, streaks, the heatmap and the weekly report.','Harkin et al., 2016, Psychological Bulletin'],
+['Change your surroundings','Bad habits are easier to break when they take more effort. Good habits stick when they take less. Friction beats willpower.','Use "Make it harder" for quit habits, and Phone quiet to lock your phone and block apps.','Wood, Good Habits, Bad Habits, 2019'],
+['Know your triggers','Awareness training is the first step of habit reversal training, one of the best studied methods for breaking unwanted habits.','Pick your triggers and log what set off each urge or slip. The app shows your top triggers.','Azrin and Nunn, 1973; Bate et al., 2011'],
+['Replace, do not just remove','Habit reversal teaches a competing response: something you do instead that cannot happen at the same time as the habit.','Fill in "Instead I will" for every quit habit.','Azrin and Nunn, 1973'],
+['Ride the urge','Urges rise, peak and fade like a wave. Smokers taught to observe urges without acting on them smoked fewer cigarettes over the next week.','Tap "Ride the urge" on a quit habit for a 10 minute guided wave.','Bowen and Marlatt, 2009'],
+['A slip is not a relapse','Feeling "I already failed, so why stop" after one slip is called the abstinence violation effect. Seeing it for what it is keeps a lapse from becoming a relapse.','After "Broke it", the app asks what set it off and helps you start fresh.','Marlatt and Gordon, 1985'],
+['Know your why','Picturing what you want, then the obstacle in the way, and planning around it (mental contrasting) helps people act on goals.','Write your why. It is shown when you ride an urge.','Oettingen, 2012']
+];
+var URG=null,urgT=null,SCIO=-1;
+function planOf(t){return (t&&t.plan)||{};}
+function lc(s){s=String(s||'');return s.charAt(0).toLowerCase()+s.slice(1);}
+function planSentence(kind,name,p){
+  p=p||{};
+  if(kind==='quit'){
+    if(!p.swap)return '';
+    var tr=(p.trig||[]).slice(0,2);
+    return 'If I feel the urge'+(tr.length?' (usually when '+tr.join(' or ').toLowerCase()+')':'')+', then instead I will '+p.swap+'.';
+  }
+  if(!p.cue)return '';
+  return 'After I '+p.cue+', I will '+lc(name||'do it')+(p.where?' '+p.where:'')+'.';
+}
+function planLine(t){return planSentence(t.kind==='quit'?'quit':'do',t.name,planOf(t));}
+function cleanPlan(p){
+  var r={},k;p=p||{};
+  for(k in p){if(k==='trig'){if(p.trig&&p.trig.length)r.trig=p.trig.slice();}else{var s=String(p[k]||'').trim();if(s)r[k]=s.slice(0,160);}}
+  return r;
+}
+function planForm(f){
+  var p=f.plan||(f.plan={}),h='<div class="plansec"><div class="fl" style="margin-top:0">Science plan</div>';
+  if(f.kind==='quit'){
+    h+='<div class="fl">What usually sets it off? (your triggers)</div><div class="tpls" style="margin-bottom:4px">'+TRIGS.concat((p.trig||[]).filter(function(x){return TRIGS.indexOf(x)<0;})).map(function(x){var on=(p.trig||[]).indexOf(x)>=0;return '<button class="'+(on?'on':'')+'" data-a="ptrig" data-v="'+esc(x)+'">'+esc(x)+'</button>';}).join('')+'</div>';
+    h+='<div class="fl">When the urge comes, instead I will</div><input type="text" data-f="p_swap" maxlength="160" placeholder="e.g. drink water and take 10 slow breaths" value="'+esc(p.swap||'')+'">';
+    h+='<div class="fl">Make it harder (add friction)</div><input type="text" data-f="p_fric" maxlength="160" placeholder="e.g. keep it out of the house" value="'+esc(p.fric||'')+'">';
+    h+='<div class="fl">Why I am quitting</div><input type="text" data-f="p_why" maxlength="160" placeholder="e.g. Breathe freely and live longer" value="'+esc(p.why||'')+'">';
+  }else{
+    h+='<div class="fl">After I ... (a routine you already do)</div><input type="text" data-f="p_cue" maxlength="160" placeholder="e.g. brush my teeth in the morning" value="'+esc(p.cue||'')+'">';
+    h+='<div class="fl">Where</div><input type="text" data-f="p_where" maxlength="160" placeholder="e.g. on my mat in the bedroom" value="'+esc(p.where||'')+'">';
+    h+='<div class="fl">Tiny version for bad days</div><input type="text" data-f="p_tiny" maxlength="160" placeholder="e.g. 5 push ups" value="'+esc(p.tiny||'')+'">';
+    h+='<div class="fl">Pair it with something you enjoy</div><input type="text" data-f="p_rew" maxlength="160" placeholder="e.g. my favourite podcast, only while walking" value="'+esc(p.rew||'')+'">';
+    h+='<div class="fl">Why it matters to me</div><input type="text" data-f="p_why" maxlength="160" placeholder="e.g. More energy for my day" value="'+esc(p.why||'')+'">';
+  }
+  var ps=planSentence(f.kind,f.name,p);
+  h+='<div class="plan" id="planprev"'+(ps?'':' hidden')+'>'+esc(ps)+'</div>';
+  h+='<p class="hint">If-then plans made people much more likely to follow through across 94 studies. Fill in what you can.</p></div>';
+  return h;
+}
+function libHtml(){
+  var k=F.libk==='quit'?'quit':'do',list=LIB[k],h='<div class="libbox"><div class="seg" style="margin-top:0"><button data-a="libk" data-v="do" class="'+(k==='do'?'on':'')+'">Build ('+LIB.do.length+')</button><button data-a="libk" data-v="quit" class="'+(k==='quit'?'on':'')+'">Quit ('+LIB.quit.length+')</button></div>';
+  var cats=[];list.forEach(function(x){if(cats.indexOf(x.cat)<0)cats.push(x.cat);});
+  cats.forEach(function(c){
+    h+='<div class="fl">'+esc(c)+'</div>';
+    list.forEach(function(x,i){if(x.cat!==c)return;h+='<button class="libi" data-a="lib" data-v="'+k+':'+i+'"><b>'+esc(x.n)+'</b><span>'+esc(k==='quit'?'Instead: '+x.swap:'Tiny version: '+x.tiny)+'</span></button>';});
+  });
+  h+='<p class="hint">Each habit comes with a plan based on habit research. You can change anything before saving.</p></div>';
+  return h;
+}
+function useLib(v){
+  var pr=String(v).split(':'),k=pr[0]==='quit'?'quit':'do',x=LIB[k][+pr[1]];
+  if(!x||!F)return;
+  F.name=x.n;F.cat=x.cat;F.kind=k;F.lib=false;F.chal=66;F.type='daily';
+  if(k==='quit'){F.target=1;F.unit='';F.timer=false;F.step=1;if(F.sched==='wtotal')F.sched='daily';F.plan={trig:x.trig.slice(),swap:x.swap,fric:x.fric,why:x.why};}
+  else{F.target=x.t;F.timer=!!x.tm;F.unit=x.tm?'min':(x.u||'');F.step=1;F.plan={cue:x.cue,where:x.where,tiny:x.tiny,rew:x.rew,why:x.why};}
+  F.libPhone=!!x.phone;
+}
+function repsOf(t){return chalDone(t);}
+function nudge(t){
+  if(cur!==today()||t.type!=='daily'||isWeekly(t)||isWT(t)||isDone(cur,t))return '';
+  var y=shift(cur,-1);
+  if(y<t.created||!onDay(t,y))return '';
+  if(isQuit(t))return isBroke(y,t)?'Slipped yesterday. A slip is not a relapse. Today is a fresh start.':'';
+  if(isDone(y,t))return '';
+  var p=planOf(t);
+  return 'Missed yesterday. Never miss twice'+(p.tiny?': just do '+p.tiny:'')+'.';
+}
+function urgeList(id){return (S.urges||[]).filter(function(u){return !id||u.t===id;});}
+function topTrigs(list,n){
+  var c={},k,a=[];
+  list.forEach(function(u){if(u.trig)c[u.trig]=(c[u.trig]||0)+1;});
+  for(k in c)a.push([k,c[k]]);
+  a.sort(function(x,y){return y[1]-x[1];});
+  return a.slice(0,n||3);
+}
+function peakPart(list){
+  var b=[0,0,0,0],nm=['night (12 am to 6 am)','morning (6 am to 12 pm)','afternoon (12 pm to 6 pm)','evening (6 pm to 12 am)'],i,best=-1;
+  list.forEach(function(u){b[Math.floor(new Date(u.at).getHours()/6)]++;});
+  for(i=0;i<4;i++)if(b[i]&&(best<0||b[i]>b[best]))best=i;
+  return best<0?'':nm[best];
+}
+function scienceDetail(t){
+  if(t.type!=='daily')return '';
+  var q=isQuit(t),p=planOf(t),pl=planLine(t),reps=repsOf(t),pct=Math.min(100,Math.round(reps/66*100)),h='';
+  h+='<div class="sec" style="margin-top:22px"><h2>Habit science</h2></div><div class="panel">';
+  h+='<div class="fl" style="margin-top:0">'+(q?'Clean days toward a new normal':'Repetitions toward automatic')+'</div><div class="bar"><i style="width:'+pct+'%"></i></div><p class="hint" style="margin-bottom:4px"><b>'+reps+'</b> of about 66. '+(reps>=66?'Most people feel a habit is automatic by now. Keep the same cue.':'Habits took 66 days on average to feel automatic in a UCL study (18 to 254). Same cue, every day.')+'</p>';
+  if(pl)h+='<div class="fl">Your if-then plan</div><div class="plan">'+esc(pl)+'</div>';
+  var rows=[];
+  if(!q&&p.tiny)rows.push(['Tiny version for bad days',p.tiny]);
+  if(!q&&p.rew)rows.push(['Paired with',p.rew]);
+  if(q&&p.fric)rows.push(['Friction',p.fric]);
+  if(p.why)rows.push(['Why',p.why]);
+  rows.forEach(function(r){h+='<div class="fl">'+r[0]+'</div><div class="pv">'+esc(r[1])+'</div>';});
+  if(!pl&&!rows.length)h+='<p class="hint">No plan yet. Tap Edit and fill in the science plan, or pick this habit from the habit library.</p>';
+  if(q){
+    var us=urgeList(t.id),pass=us.filter(function(u){return u.out==='pass';}).length,slips=us.filter(function(u){return u.out!=='pass';}).length,tt=topTrigs(us,3),pp=peakPart(us);
+    h+='<div class="fl">Urges</div><p class="hint" style="margin:0 0 8px">Ridden out: <b>'+pass+'</b> · Slips logged: <b>'+slips+'</b>'+(tt.length?'<br>Top triggers: <b>'+esc(tt.map(function(x){return x[0]+' ('+x[1]+')';}).join(', '))+'</b>':'')+(pp?'<br>Most urges come in the <b>'+pp+'</b>':'')+'</p>';
+    h+='<button class="btn full" data-a="urge" data-id="'+t.id+'">Ride the urge now</button>';
+  }
+  h+='</div>';
+  return h;
+}
+function urgeDash(){
+  var us=urgeList(null);if(!us.length)return '';
+  var wk=Date.now()-7*86400000,w=us.filter(function(u){return u.at>=wk;}),pass=us.filter(function(u){return u.out==='pass';}).length,wp=w.filter(function(u){return u.out==='pass';}).length,tt=topTrigs(us,3),pp=peakPart(us);
+  return '<div class="sec" style="margin-top:22px"><h2>Urges and triggers</h2></div><div class="panel"><div class="g2" style="margin-bottom:8px">'+tile('Ridden out',pass,'All time')+tile('This week',wp+'<small>/'+w.length+'</small>','Urges beaten')+'</div><p class="hint" style="margin:0">'+(tt.length?'Top triggers: <b>'+esc(tt.map(function(x){return x[0];}).join(', '))+'</b>. ':'')+(pp?'Most urges come in the <b>'+pp+'</b>. Plan something for that time.':'')+'</p></div>';
+}
+function sciPanel(){
+  var h='<div class="sec" style="margin-top:22px"><h2>Habit science guide</h2></div><div class="panel"><p class="hint" style="margin:0 0 10px">The methods this app uses, and the research behind them. Tap one to read more.</p>';
+  SCI.forEach(function(s,i){
+    var on=SCIO===i;
+    h+='<div class="scii'+(on?' on':'')+'"><button data-a="scio" data-v="'+i+'"><span>'+(i+1)+'</span>'+esc(s[0])+'</button>'+(on?'<div class="scib"><p>'+esc(s[1])+'</p><p><b>In this app:</b> '+esc(s[2])+'</p><p class="src">'+esc(s[3])+'</p></div>':'')+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
+function openUrge(id,mode){URG={id:id,mode:mode,step:0,trig:'',start:0};drawUrge();}
+function closeUrge(){URG=null;clearInterval(urgT);urgT=null;drawUrge();}
+function logUrge(out){
+  if(!URG)return;
+  S.urges=S.urges||[];
+  S.urges.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),t:URG.id,at:Date.now(),d:today(),trig:URG.trig||'',out:out});
+  if(S.urges.length>3000)S.urges=S.urges.slice(-3000);
+}
+var WAVE=['Notice where you feel the urge in your body. Chest, mouth, hands?','Breathe in slowly for 4 seconds, out for 6. Do not fight the urge. Just watch it.','Urges rise, peak and fade like a wave. You only have to ride this one.','Rate it in your head from 1 to 10. Watch the number change.','Read your why. Then do your swap.'];
+function drawUrge(){
+  var el=document.getElementById('urge');
+  if(!URG){if(el&&el.parentNode)el.parentNode.removeChild(el);return;}
+  var t=byId(URG.id);if(!t){URG=null;drawUrge();return;}
+  if(!el){el=document.createElement('div');el.id='urge';document.body.appendChild(el);}
+  var p=planOf(t),h='<div class="tcard ucard">',trs=(p.trig||[]).concat(TRIGS.filter(function(x){return (p.trig||[]).indexOf(x)<0;})).slice(0,10);
+  var chips='<div class="tpls" style="margin-bottom:12px">'+trs.map(function(x){return '<button class="'+(URG.trig===x?'on':'')+'" data-a="utrig" data-v="'+esc(x)+'">'+esc(x)+'</button>';}).join('')+'</div>';
+  if(URG.mode==='lapse'){
+    h+='<h3>A slip, not a relapse</h3><p>One slip does not erase your progress. The "I already failed, so why stop" feeling has a name, the abstinence violation effect. Seeing it is how you beat it.</p><div class="fl" style="margin-top:0">What set it off?</div>'+chips;
+    if(p.swap)h+='<p>Next time, your plan: <b>'+esc(p.swap)+'</b></p>';
+    h+='<div class="fr" style="margin-top:0"><button class="btn" style="flex:1" data-a="ulapse">Save and start fresh</button><button class="btn ghost" data-a="uclose">Skip</button></div>';
+  }else if(URG.step===0){
+    h+='<h3>Ride the urge</h3><p>'+esc(t.name)+'. Urges usually peak and pass within minutes if you do not act on them.</p><div class="fl" style="margin-top:0">What set it off?</div>'+chips+'<div class="fr" style="margin-top:0"><button class="btn" style="flex:1" data-a="ustart">Start the 10 minute wave</button><button class="btn ghost" data-a="uclose">Close</button></div>';
+  }else{
+    var left=Math.max(0,600-Math.floor((Date.now()-URG.start)/1000)),idx=Math.min(WAVE.length-1,Math.floor((600-left)/120));
+    h+='<h3>Ride the urge</h3><div class="ubig" data-uclock>'+mmss(left/60)+'</div><p data-uwave>'+esc(WAVE[idx])+'</p>';
+    if(p.why)h+='<p>Your why: <b>'+esc(p.why)+'</b></p>';
+    if(p.swap)h+='<p>Your swap: <b>'+esc(p.swap)+'</b></p>';
+    h+='<div class="fr" style="margin-top:0"><button class="btn" style="flex:1" data-a="upass">The urge passed</button><button class="btn ghost" data-a="ugave">I gave in</button></div>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+function urgeTick(){
+  if(!URG||!URG.start){clearInterval(urgT);urgT=null;return;}
+  var left=Math.max(0,600-Math.floor((Date.now()-URG.start)/1000)),c=document.querySelector('[data-uclock]'),w=document.querySelector('[data-uwave]');
+  if(c)c.textContent=mmss(left/60);
+  if(w)w.textContent=WAVE[Math.min(WAVE.length-1,Math.floor((600-left)/120))];
+  if(left<=0){clearInterval(urgT);urgT=null;hap(40);if(w)w.textContent='Ten minutes. Most urges have passed by now. How did it go?';}
+}
+function urgeAct(a,v){
+  if(a==='urge'){openUrge(v,'urge');return true;}
+  if(!URG)return true;
+  if(a==='utrig'){URG.trig=URG.trig===v?'':v;drawUrge();}
+  else if(a==='uclose'){closeUrge();}
+  else if(a==='ustart'){URG.step=1;URG.start=Date.now();drawUrge();clearInterval(urgT);urgT=setInterval(urgeTick,1000);}
+  else if(a==='upass'){logUrge('pass');closeUrge();save();hap(30);toast('Urge ridden out. Each one makes the next one weaker.');render();}
+  else if(a==='ugave'){var id=URG.id;logUrge('gave');URG.mode='lapse';URG.logged=true;clearInterval(urgT);urgT=null;var gt=byId(id);if(gt&&!isBroke(today(),gt)){var c0=cur;cur=today();setQuit(id,'broke');cur=c0;}save();render();drawUrge();}
+  else if(a==='ulapse'){if(URG.logged){var last=S.urges[S.urges.length-1];if(last&&last.t===URG.id&&!last.trig)last.trig=URG.trig||'';}else logUrge('lapse');closeUrge();save();toast('Logged. Tomorrow is a clean day.');render();}
+  return true;
 }
 
 /* ---------- tasks tab ---------- */
@@ -1187,6 +1447,7 @@ function toolPanels(){
   h+='<div class="sec" style="margin-top:22px"><h2>Vacation mode</h2></div><div class="panel"><p class="hint" style="margin:0 0 12px">Pause everything for a date range. Those days have no tasks and no reminders, and never break your streak.</p>';
   vs.forEach(function(r,ix){h+='<div class="skrow"><span class="nm" style="text-decoration:none">'+esc(lf(r.a,{day:'numeric',month:'short'}))+' to '+esc(lf(r.b,{day:'numeric',month:'short',year:'numeric'}))+'</span><button class="btn ghost sm" data-a="vacrm" data-v="'+ix+'">Remove</button></div>';});
   h+='<div class="fr"><input type="date" id="vs" value="'+today()+'"><input type="date" id="ve" value="'+shift(today(),6)+'"></div><button class="btn full" data-a="vacadd">Pause these days</button>'+(vmsg?'<p class="hint" style="color:var(--pink)">'+esc(vmsg)+'</p>':'')+'</div>';
+  h+=sciPanel();
   h+='<div class="sec" style="margin-top:22px"><h2>Help</h2></div><div class="panel"><button class="btn ghost sm" data-a="tourplay">Replay the quick tour</button></div>';
   return h;
 }
@@ -1207,7 +1468,7 @@ function doAuto(){
   if(!NAT||!key||!AUTO.name||typeof NAT.autoBackup!=='function')return;
   backupPayload().then(function(text){nat('autoBackup',[text]);}).catch(function(){});
 }
-var TOURS=[['Welcome','Habbit Strick keeps your habits private and encrypted on this phone. Here is a quick tour.'],['Check things off','Swipe a task right to finish it, left for Pin, Skip, Edit and Delete. Press and hold a task to reorder.'],['Build or quit','Add a habit to build, or one to quit. For quit habits, tap Followed or Broke it each day.'],['Move around','Slide the date bar to change day. Swipe the page left or right to switch between Today, Insights and Tasks.'],['Stay safe','In the Tasks tab, turn on Automatic backup and send a test reminder so you never lose data or miss one.']];
+var TOURS=[['Welcome','Habbit Strick keeps your habits private and encrypted on this phone. Here is a quick tour.'],['Check things off','Swipe a task right to finish it, left for Pin, Skip, Edit and Delete. Press and hold a task to reorder.'],['Build or quit','Add a habit to build or one to quit, or pick one from the habit library with a ready science plan. For quit habits, tap Followed or Broke it each day, and Ride the urge when a craving hits.'],['Move around','Slide the date bar to change day. Swipe the page left or right to switch between Today, Insights and Tasks.'],['Stay safe','In the Tasks tab, turn on Automatic backup and send a test reminder so you never lose data or miss one.']];
 function showTour(){tourI=0;drawTour();}
 function drawTour(){
   var el=document.getElementById('tour');
@@ -1354,6 +1615,7 @@ function mergeData(a,b,unionTasks){
   fillIn(r.log,b.log,ids,true);fillIn(r.skip,b.skip||{},ids,true);fillIn(r.broke,b.broke||{},ids,true);
   r.subd=r.subd||{};fillIn(r.subd,b.subd||{},ids,true);
   for(d in b.notes){if(!r.notes[d])r.notes[d]=b.notes[d];}
+  var uid={};(r.urges||[]).forEach(function(u){uid[u.id]=1;});r.urges=(r.urges||[]).concat((b.urges||[]).filter(function(u){return !uid[u.id]&&ids[u.t];})).sort(function(x,y){return x.at-y.at;});
   return norm(r);
 }
 function syncUI(){var ae=document.activeElement;if(key&&view==='tasks'&&!F&&!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')))render();}
@@ -1536,6 +1798,12 @@ document.addEventListener('click',function(e){
   else if(a==='cal'){var cm=parse(calM||(cur.slice(0,8)+'01'));calM=ds(new Date(cm.getFullYear(),cm.getMonth()+(+v),1));}
   else if(a==='calpick'){cur=v;view='today';window.scrollTo(0,0);}
   else if(a==='kind'){if(F){F.kind=v;if(v==='quit'){F.target=1;F.timer=false;F.unit='';F.step=1;if(F.sched==='wtotal')F.sched='daily';}}}
+  else if(a==='libopen'){if(F){F.lib=!F.lib;}}
+  else if(a==='libk'){if(F)F.libk=v;}
+  else if(a==='lib'){useLib(v);}
+  else if(a==='ptrig'){if(F){F.plan=F.plan||{};var tl=F.plan.trig||(F.plan.trig=[]),ti=tl.indexOf(v);if(ti>=0)tl.splice(ti,1);else tl.push(v);}}
+  else if(a==='scio'){SCIO=SCIO===+v?-1:+v;}
+  else if(a==='urge'||a==='utrig'||a==='uclose'||a==='ustart'||a==='upass'||a==='ugave'||a==='ulapse'){urgeAct(a,v||id);return;}
   else if(a==='tpl'){var tp=TPL[+v];if(tp&&F){F.name=tp.n;F.cat=tp.cat;F.target=tp.t;F.unit=tp.tm?'min':tp.u;F.timer=!!tp.tm;F.step=tp.s||1;F.kind=tp.q?'quit':'do';}}
   else if(a==='skip'){var skt=byId(id);if(skt){withUndo('Skipped: '+skt.name,function(){var kk=S.skip[cur]||(S.skip[cur]={});kk[id]=1;});openId=null;hap(10);save();}}
   else if(a==='unskip'){if(S.skip[cur])delete S.skip[cur][id];save();}
@@ -1603,7 +1871,7 @@ document.addEventListener('click',function(e){
   else if(a==='remadd'){var rt=document.getElementById('rt');if(rt&&rt.value&&F.rem.indexOf(rt.value)<0){F.rem.push(rt.value);F.rem.sort();}}
   else if(a==='remrm'){F.rem.splice(+v,1);}
   else if(a==='follow'){var ft=byId(id);if(ft)setQuit(id,isDone(cur,ft)?'none':'follow');return;}
-  else if(a==='broke'){var bt=byId(id);if(bt)setQuit(id,isBroke(cur,bt)?'none':'broke');return;}
+  else if(a==='broke'){var bt=byId(id);if(bt){var wasB=isBroke(cur,bt);setQuit(id,wasB?'none':'broke');if(!wasB)openUrge(id,'lapse');}return;}
   else if(a==='tog'){var tt=byId(id);if(tt){setDoneState(id,!isDone(cur,tt));}return;}
   else if(a==='inc'||a==='dec'){
     var it=byId(id);if(it){var stp=it.step>0?+it.step:1,nv=val(cur,id)+(a==='inc'?stp:-stp);if(!isWT(it))nv=Math.min(nv,tgt(it));setVal(cur,id,nv);save();if(nv>=tgt(it)-1e-9||isWT(it))setTimeout(function(){celebrate(id);},0);}
