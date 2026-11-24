@@ -22,7 +22,23 @@ function loadPayload() {
   try { payload = JSON.parse(fs.readFileSync(STATE(), 'utf8')); } catch (e) { /* first run */ }
 }
 
+function startHidden() {
+  if (process.argv.includes('--hidden')) return true;
+  try {
+    const f = path.join(app.getPath('userData'), 'relaunch-hidden');
+    if (fs.existsSync(f)) { fs.unlinkSync(f); return true; }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+let lastCheck = 0;
+function maybeCheck() {
+  if (!app.isPackaged || Date.now() - lastCheck < 30 * 60 * 1000) return;
+  lastCheck = Date.now();
+  autoUpdater.checkForUpdates().catch(() => {});
+}
+
 function showWindow() {
+  maybeCheck();
   if (!win) createWindow();
   if (win.isMinimized()) win.restore();
   win.show();
@@ -38,7 +54,7 @@ function createWindow() {
     backgroundColor: '#050505',
     title: 'Habbit Strick',
     icon: ICON,
-    show: !process.argv.includes('--hidden'),
+    show: !startHidden(),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -57,7 +73,7 @@ function createWindow() {
     if (!url.startsWith('file:')) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); }
   });
   win.on('close', (e) => {
-    if (!quitting) { e.preventDefault(); win.hide(); }
+    if (!quitting) { e.preventDefault(); win.hide(); if (updateReady) installNow(true); }
   });
 }
 
@@ -137,18 +153,27 @@ function setupUpdater() {
   autoUpdater.on('update-downloaded', (info) => {
     updateReady = true;
     rebuildTrayMenu();
+    if (!win || !win.isVisible()) { installNow(true); return; }
+    try { win.webContents.send('desk-upd', info.version); } catch (e) { /* window gone */ }
     const n = new Notification({ title: 'Habbit Strick update ready', body: 'Version ' + info.version + ' will install when you quit. Click to restart now.', icon: ICON });
     n.on('click', () => { quitting = true; autoUpdater.quitAndInstall(); });
     n.show();
   });
   autoUpdater.on('error', () => { /* offline or no release yet */ });
   if (app.isPackaged) {
-    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 8000);
-    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000);
+    setTimeout(() => { lastCheck = Date.now(); autoUpdater.checkForUpdates().catch(() => {}); }, 8000);
+    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 60 * 60 * 1000);
   }
 }
 
+function installNow(hidden) {
+  try { if (hidden) fs.writeFileSync(path.join(app.getPath('userData'), 'relaunch-hidden'), '1'); } catch (e) { /* ignore */ }
+  quitting = true;
+  autoUpdater.quitAndInstall(true, true);
+}
+
 /* ---------- IPC ---------- */
+ipcMain.on('desk-install', () => { if (updateReady) installNow(false); });
 ipcMain.on('desk-info', (e) => { e.returnValue = { version: app.getVersion(), startup: startupOn() }; });
 ipcMain.on('desk-sync', (e, json) => {
   try {

@@ -2,6 +2,7 @@ package com.habbitstrick.app;
 
 import android.Manifest;
 import android.content.Context;
+import android.view.View;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -579,6 +580,23 @@ public class MainActivity extends AppCompatActivity {
                 else Quiet.stopService(getApplicationContext());
             } catch (Exception ignored) {
             }
+        }
+
+        @JavascriptInterface
+        public void setBars(String color, boolean light) {
+            runOnUiThread(() -> {
+                try {
+                    int c = Color.parseColor(color);
+                    getWindow().setStatusBarColor(c);
+                    getWindow().setNavigationBarColor(c);
+                    View d = getWindow().getDecorView();
+                    int f = d.getSystemUiVisibility();
+                    if (light) f |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                    else f &= ~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+                    d.setSystemUiVisibility(f);
+                } catch (Exception ignored) {
+                }
+            });
         }
 
         @JavascriptInterface

@@ -11,4 +11,6 @@ contextBridge.exposeInMainWorld('Desktop', {
   checkUpdate: () => ipcRenderer.invoke('desk-update'),
   toggleStartup: () => ipcRenderer.invoke('desk-startup'),
   test: () => ipcRenderer.send('desk-test'),
+  onUpdate: (cb) => ipcRenderer.on('desk-upd', (e, v) => cb(v)),
+  installUpdate: () => ipcRenderer.send('desk-install'),
 });
